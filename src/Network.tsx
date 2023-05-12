@@ -1,15 +1,15 @@
 import { KonvaEventObject } from "konva/lib/Node";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Arrow, Circle, Group, Layer, Rect, Stage, Text } from "react-konva";
-import { dataService } from "./data/data.service";
 import { TimelineVariables, useTimelineContext } from "./TimelineContext";
+import { dataService } from "./data/data.service";
 import {
-  TimelineSpace,
-  ObjV2,
-  NodeID,
   KonvaSpace,
-  RenderableNetworkNode,
+  NodeID,
+  ObjV2,
   RenderableNetworkEdge,
+  RenderableNetworkNode,
+  TimelineSpace,
 } from "./types";
 import { useData } from "./useAkita";
 
@@ -37,7 +37,7 @@ NodesComponentProps): JSX.Element {
     <Group>
       {/* TODO maybe pass a ref to the right circles to the edge obj? */}
       {nodes.map((node) => {
-        console.log("TEST123", node);
+        console.log("TEST123-node");
         return (
           <Circle
             draggable
@@ -152,43 +152,52 @@ export function TimelineTooltip({
 
 // function timelineContextProvider = Contextprop
 export function Network({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
+  const [{ adjMat, renderableNetworkNodes: nodes, renderableEdges: edges }] =
+    useData(["renderableNetworkNodes", "adjMat", "renderableEdges"]);
+
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
-  const [{ renderableNetworkNodes: nodes, renderableEdges: edges }] = useData([
-    "renderableNetworkNodes",
-    "renderableEdges",
-  ]);
   const [highlightedNode, setHighlightedNode] = useState<NodeID | null>(null);
+  const flatAdjMat = adjMat ? adjMat.flat() : [];
+
+  useEffect(() => {
+    if (adjMat) {
+      dataService.setNodesFromAdjMat(adjMat);
+    }
+  }, [JSON.stringify(flatAdjMat)]);
+  console.log("TEST123-nodes", nodes, edges);
   return (
     <>
-      <Stage
-        width={stageSize.x}
-        height={stageSize.y}
-        style={{ backgroundColor: "white" }}
-      >
-        <Layer x={TimelineVariables.timelineLeftPadding}>
-          {nodes && edges && (
-            <NetworkNodes
-              nodes={nodes}
-              highlightedNode={highlightedNode}
-              edges={edges}
-              onMouseOver={(id) => {
-                setHighlightedNode(id);
-              }}
-              onMouseLeave={() => {
-                setHighlightedNode(null);
-              }}
-              updateEdgePositions={(node, event) => {
-                console.log("TEST123", event);
-                dataService.moveNode(node, {
-                  x: event.target.x() as KonvaSpace,
-                  y: event.target.y() as KonvaSpace,
-                });
-              }}
-            />
-          )}
-          <TimelineTooltip tooltip={tooltip} />
-        </Layer>
-      </Stage>
+      {nodes && (
+        <Stage
+          width={stageSize.x}
+          height={stageSize.y}
+          style={{ backgroundColor: "white" }}
+        >
+          <Layer x={TimelineVariables.timelineLeftPadding}>
+            {nodes && edges && (
+              <NetworkNodes
+                nodes={nodes}
+                highlightedNode={highlightedNode}
+                edges={edges}
+                onMouseOver={(id) => {
+                  dataService.setHoveredNetworkNode(id);
+                }}
+                onMouseLeave={() => {
+                  setHighlightedNode(null);
+                }}
+                updateEdgePositions={(node, event) => {
+                  console.log("TEST123", event);
+                  dataService.moveNode(node, {
+                    x: event.target.x() as KonvaSpace,
+                    y: event.target.y() as KonvaSpace,
+                  });
+                }}
+              />
+            )}
+            <TimelineTooltip tooltip={tooltip} />
+          </Layer>
+        </Stage>
+      )}
     </>
   );
 }

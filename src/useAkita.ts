@@ -1,6 +1,6 @@
 import { Query } from "@datorama/akita";
-import { Observable, ObservedValueOf } from "rxjs";
 import { pick } from "rambdax";
+import { Observable, ObservedValueOf } from "rxjs";
 
 import { useEffect, useState } from "react";
 import { dataQuery } from "./data/data.query";
@@ -52,3 +52,5 @@ export function useAkita<
 // TODO token registration
 export const useData = (queryTerms: SubscribedQueryKeys<typeof dataQuery>) =>
   useAkita(dataQuery, dataService, queryTerms);
+
+// TODO bring out into own library

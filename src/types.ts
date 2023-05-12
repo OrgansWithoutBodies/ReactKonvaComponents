@@ -43,6 +43,10 @@ export type HistoricalEvent<
 
   participants?: AgentID[];
 };
+export type Agent = {
+  id: AgentID;
+  name: string;
+};
 type ConversionTag<TFrom extends number, TTo extends number> = {
   __from: TFrom;
   __to: TTo;
@@ -97,7 +101,8 @@ export type NetworkRenderingFunction = (
   network: RawNetwork
 ) => RenderableNetwork;
 
-// TODO restrictable matrix lengths?
-export type Matrix<T> = T[][];
-export type Adjacency = -1 | 0 | 1;
-export type AdjacencyMatrix = Matrix<Adjacency>;
+export type InfoPanelDateElement = {
+  title: string;
+  dates?: string;
+  desc: string;
+};

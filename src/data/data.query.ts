@@ -1,23 +1,33 @@
 import { Query } from "@datorama/akita";
-import { combineLatest, map, Observable } from "rxjs";
-import { forceDirectedGraph } from "../layoutNetwork";
+
+import { Observable, combineLatest, map, startWith } from "rxjs";
 import {
-  periodIsSegmentGuard,
+  AdjacencyMatrix,
+  Agent,
   HexStr,
   HistoricalEvent,
+  InfoPanelDateElement,
   LineSegment,
-  RenderableEvent,
-  SpaceConvertingFunction,
-  TimelineSpace,
-  TimeSpace,
-  PeriodOrSingleton,
-  RenderableNetworkEdge,
-  RawNetwork,
-  AdjacencyMatrix,
-  RenderableNetworkNode,
   Matrix,
+  PeriodOrSingleton,
+  RawNetwork,
+  RenderableEvent,
+  RenderableNetworkEdge,
+  RenderableNetworkNode,
+  SpaceConvertingFunction,
+  TimeSpace,
+  TimelineSpace,
+  periodIsSegmentGuard,
 } from "../types";
 import { DataState, DataStore, dataStore } from "./data.store";
+
+const formatDates = ({ eventTime }: HistoricalEvent): string => {
+  const isSegment = periodIsSegmentGuard(eventTime);
+  if (isSegment) {
+    return `${eventTime.start} - ${eventTime.end}`;
+  }
+  return `${eventTime}`;
+};
 
 const createLoL = (dim: number): Matrix<0> =>
   [...Array.from({ length: dim }).keys()].map(
@@ -124,17 +134,66 @@ export class DataQuery extends Query<DataState> {
     };
     return eventPositioner;
   };
+  private static participantsForEventSet(
+    events: HistoricalEvent[],
+    agents: Agent[]
+  ) {
+    return new Set(
+      events
+        .map((event) =>
+          event.participants
+            ? event.participants.map((participant) =>
+                agents.find(({ id }) => id === participant)
+              )
+            : []
+        )
+        .flat()
+    );
+  }
   constructor(protected store: DataStore) {
     super(store);
   }
 
   private unfilteredEvents = this.select("events");
+  private agents = this.select("agents");
+
+  public participantsAllEvents = combineLatest([
+    this.unfilteredEvents,
+    this.agents,
+  ]).pipe(
+    map(([events, agents]) => {
+      return DataQuery.participantsForEventSet(events, agents);
+    })
+  );
 
   public networkNodes = this.select("networkNodes");
   public networkNodesArray = this.networkNodes.pipe(
     map((nodes) => Object.values(nodes))
   );
   public networkEdges = this.select("networkEdges");
+
+  public hoveredEvent = this.select("hoveredEvent");
+  public selectedEventId = this.select("selectedEvent");
+
+  public selectedEvent = combineLatest([
+    this.selectedEventId,
+    this.unfilteredEvents,
+  ]).pipe(
+    map(([selected, unfiltereds]) => {
+      return unfiltereds.find(({ id }) => id === selected);
+    })
+  );
+
+  public participantsSelectedEvent = combineLatest([
+    this.selectedEvent,
+    this.agents,
+  ]).pipe(
+    map(([selectedEvent, agents]) => {
+      return selectedEvent
+        ? DataQuery.participantsForEventSet([selectedEvent], agents)
+        : null;
+    })
+  );
 
   public rawNetwork: Observable<RawNetwork> = combineLatest([
     this.networkNodesArray,
@@ -146,32 +205,29 @@ export class DataQuery extends Query<DataState> {
   );
 
   public adjMat: Observable<AdjacencyMatrix> = this.rawNetwork.pipe(
-    map((network) => rawNetworkToAdjMat(network))
+    map((network) => rawNetworkToAdjMat(network)),
+    startWith([])
   );
 
   public renderableNetworkNodes: Observable<RenderableNetworkNode[]> =
-    combineLatest([this.networkNodesArray, this.adjMat]).pipe(
-      map(([nodes, adjMat]) => {
-        //
-        const placements = forceDirectedGraph({ G: adjMat, H: 100 });
-        return nodes.map((node, ii) => {
-          return {
-            ...node,
-            renderedProps: {
-              position: { ...placements[ii] },
-              color: getRandomColor(),
-            },
-          };
-        });
+    this.networkNodesArray.pipe(
+      map((nodes) => {
+        //z
+        // const placements = forceDirectedGraph({ G: adjMat, H: 100 });
+        const filtered = nodes.filter(
+          ({ renderedProps }) => renderedProps !== undefined
+        );
+        console.log("TEST123-filter", filtered);
+        return filtered as RenderableNetworkNode[];
       })
     );
 
   public renderableEdges: Observable<RenderableNetworkEdge[]> = combineLatest([
     this.renderableNetworkNodes,
     this.networkEdges,
-    this.adjMat,
   ]).pipe(
     map(([nodes, edges]) => {
+      console.log("TEST123-edges", nodes, edges);
       return edges.map((edge) => {
         return {
           ...edge,
@@ -315,12 +371,84 @@ export class DataQuery extends Query<DataState> {
         return {
           ...event,
           renderedProps: {
-            color: getRandomColor(),
+            color: "red",
             position: positioner(event),
           },
         };
       });
     })
+  );
+
+  // {
+  //   pos: hitEvent.renderedProps.position,
+  //   dates: formatDates(hitEvent),
+  //   desc: hitEvent.eventInfo,
+  //   title: hitEvent.eventName,
+  // }
+  public hoveredEventInfo = combineLatest([
+    this.events,
+    this.hoveredEvent,
+  ]).pipe(
+    map(([events, hoveredEvent]) => {
+      const event = events.find(({ id }) => id === hoveredEvent);
+      if (!event) {
+        return null;
+      }
+      return {
+        dates: formatDates(event),
+        desc: event.eventInfo,
+        title: event.eventName,
+      };
+    })
+  );
+
+  public hoveredAdjMatCell = this.select("hoveredAdjMatCell");
+
+  public hoveredNetworkNode = this.select("hoveredNetworkNode");
+
+  public adjMatCellEventInfo: Observable<InfoPanelDateElement | null> =
+    this.hoveredAdjMatCell.pipe(
+      map((val) => {
+        if (!val) {
+          return null;
+        }
+        return { title: "Adjacency Matrix", desc: `${val[0]}, ${val[1]}` };
+      })
+    );
+  public hoveredNetworkNodeEventInfo: Observable<InfoPanelDateElement | null> =
+    this.hoveredNetworkNode.pipe(
+      map((val) => {
+        if (!val) {
+          return null;
+        }
+        return { title: "Network", desc: `${val}` };
+      })
+    );
+  public infoPanelElements: Observable<InfoPanelDateElement[]> = combineLatest([
+    this.hoveredEventInfo,
+    this.adjMatCellEventInfo,
+    this.hoveredNetworkNodeEventInfo,
+  ]).pipe(
+    map(
+      ([
+        hoveredEventInfo,
+        adjMatCellEventInfo,
+        hoveredNetworkNodeEventInfo,
+      ]) => {
+        const eventElements = hoveredEventInfo ? [hoveredEventInfo] : [];
+        const hoveredNetworkNodeElements = hoveredNetworkNodeEventInfo
+          ? [hoveredNetworkNodeEventInfo]
+          : [];
+        const adjMatElements = adjMatCellEventInfo ? [adjMatCellEventInfo] : [];
+        const networkElements = [];
+
+        return [
+          ...eventElements,
+          ...hoveredNetworkNodeElements,
+          ...adjMatElements,
+        ];
+      }
+    )
   );
 }
 export const dataQuery = new DataQuery(dataStore);

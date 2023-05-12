@@ -10,22 +10,19 @@ import {
   Stage,
   Text,
 } from "react-konva";
-import { DataQuery } from "./data/data.query";
-import { dataService } from "./data/data.service";
-import { orderedNumbers } from "./orderedNumbers";
 import {
   TimelineContext,
   TimelineVariables,
   useTimelineContext,
 } from "./TimelineContext";
+import { dataService } from "./data/data.service";
+import { orderedNumbers } from "./orderedNumbers";
 import {
   EventID,
-  periodIsSegmentGuard,
-  HistoricalEvent,
-  RenderableEvent,
-  TimelineSpace,
-  TimeSpace,
   ObjV2,
+  RenderableEvent,
+  TimeSpace,
+  TimelineSpace,
 } from "./types";
 import { useData } from "./useAkita";
 
@@ -119,11 +116,13 @@ export function TimelineEvents({
   events,
   onMouseOver,
   onMouseLeave,
+  onSelectEvent,
 }: // onMouseMove,
 {
   events: RenderableEvent[];
   onMouseOver: (id: EventID, event: KonvaEventObject<MouseEvent>) => void;
   onMouseLeave: (id: EventID, event: KonvaEventObject<MouseEvent>) => void;
+  onSelectEvent: (id: EventID, event: KonvaEventObject<MouseEvent>) => void;
   // onMouseMove: (id: EventID, event: KonvaEventObject<MouseEvent>) => void;
 }): JSX.Element {
   const { convertToKonvaCoord, divisionLen } = useTimelineContext();
@@ -134,6 +133,7 @@ export function TimelineEvents({
           <Circle
             onMouseOver={(mouseEvent) => onMouseOver(event.id, mouseEvent)}
             onMouseLeave={(mouseEvent) => onMouseLeave(event.id, mouseEvent)}
+            onMouseUp={(mouseEvent) => onSelectEvent(event.id, mouseEvent)}
             // onMouseMove={(mouseEvent) => onMouseMove(event.id, mouseEvent)}
             x={convertToKonvaCoord(event.renderedProps.position)}
             y={divisionLen / 2}
@@ -222,14 +222,6 @@ export function TimelineTooltip({
   );
 }
 
-const formatDates = ({ eventTime }: HistoricalEvent): string => {
-  const isSegment = periodIsSegmentGuard(eventTime);
-  if (isSegment) {
-    return `${eventTime.start} - ${eventTime.end}`;
-  }
-  return `${eventTime}`;
-};
-
 // function timelineContextProvider = Contextprop
 export function Timeline({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
@@ -248,7 +240,6 @@ export function Timeline({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
 
   return (
     <TimelineContext.Provider value={TimelineVariables}>
-      {/* <FilterEvents /> */}
       <Stage
         width={stageSize.x}
         height={stageSize.y}
@@ -272,12 +263,18 @@ export function Timeline({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
                   ({ id: sourceId }) => sourceId === id
                 );
                 if (hitEvent) {
-                  setTooltip({
-                    pos: hitEvent.renderedProps.position,
-                    dates: formatDates(hitEvent),
-                    desc: hitEvent.eventInfo,
-                    title: hitEvent.eventName,
-                  });
+                  dataService.setHoveredEvent(hitEvent.id);
+                }
+              }}
+              onSelectEvent={function (
+                id: EventID,
+                event: KonvaEventObject<MouseEvent>
+              ): void {
+                const hitEvent = events.find(
+                  ({ id: sourceId }) => sourceId === id
+                );
+                if (hitEvent) {
+                  dataService.setSelectedEvent(hitEvent.id);
                 }
               }}
               onMouseLeave={function (): void {
@@ -369,3 +366,10 @@ export function FilterEvents(): JSX.Element {
     </>
   );
 }
+
+// TODO use timeline as "scrubber" to filter time (potentially two handles)
+
+// TODO control panel/add new data panel
+// TODO actions for chosen in info panel?
+// TODO 'toolbelt' for changing the way we interact w components
+// todo standard name for components
