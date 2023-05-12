@@ -114,12 +114,14 @@ export function TimelineBackground({
 
 export function TimelineEvents({
   events,
+  selectedEventId,
   onMouseOver,
   onMouseLeave,
   onSelectEvent,
 }: // onMouseMove,
 {
   events: RenderableEvent[];
+  selectedEventId: EventID | null;
   onMouseOver: (id: EventID, event: KonvaEventObject<MouseEvent>) => void;
   onMouseLeave: (id: EventID, event: KonvaEventObject<MouseEvent>) => void;
   onSelectEvent: (id: EventID, event: KonvaEventObject<MouseEvent>) => void;
@@ -138,7 +140,11 @@ export function TimelineEvents({
             x={convertToKonvaCoord(event.renderedProps.position)}
             y={divisionLen / 2}
             radius={10}
-            fill={event.renderedProps.color}
+            fill={
+              selectedEventId === event.id
+                ? "yellow"
+                : event.renderedProps.color
+            }
             stroke="black"
             strokeWidth={2}
           />
@@ -230,12 +236,14 @@ export function Timeline({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
       renderReadyEvents: events,
       finalDateFilterWithFallback: latestEventEnd,
       initialDateFilterWithFallback: earliestEventStart,
+      selectedEventId,
     },
   ] = useData([
     "renderReadyEvents",
     "finalDateFilterWithFallback",
 
     "initialDateFilterWithFallback",
+    "selectedEventId",
   ]);
 
   return (
@@ -255,6 +263,7 @@ export function Timeline({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
           {events && (
             <TimelineEvents
               events={events}
+              selectedEventId={selectedEventId}
               onMouseOver={function (
                 id: EventID,
                 event: KonvaEventObject<MouseEvent>

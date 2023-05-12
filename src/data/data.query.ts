@@ -4,11 +4,13 @@ import { Observable, combineLatest, map, startWith } from "rxjs";
 import {
   AdjacencyMatrix,
   Agent,
+  AgentID,
   HexStr,
   HistoricalEvent,
   InfoPanelDateElement,
   LineSegment,
   Matrix,
+  NodeID,
   PeriodOrSingleton,
   RawNetwork,
   RenderableEvent,
@@ -142,10 +144,11 @@ export class DataQuery extends Query<DataState> {
       events
         .map((event) =>
           event.participants
-            ? event.participants.map((participant) =>
-                agents.find(({ id }) => id === participant)
-              )
-            : []
+            ? event.participants
+            : // ? event.participants.map((participant) =>
+              //     agents.find(({ id }) => id === participant)
+              //   )
+              []
         )
         .flat()
     );
@@ -155,9 +158,11 @@ export class DataQuery extends Query<DataState> {
   }
 
   private unfilteredEvents = this.select("events");
+  public selectedNetworkNode = this.select("selectedNetworkNode");
   private agents = this.select("agents");
+  private networkNodeProps = this.select("networkNodeProps");
 
-  public participantsAllEvents = combineLatest([
+  public participantsAllEvents: Observable<Set<AgentID>> = combineLatest([
     this.unfilteredEvents,
     this.agents,
   ]).pipe(
@@ -165,12 +170,6 @@ export class DataQuery extends Query<DataState> {
       return DataQuery.participantsForEventSet(events, agents);
     })
   );
-
-  public networkNodes = this.select("networkNodes");
-  public networkNodesArray = this.networkNodes.pipe(
-    map((nodes) => Object.values(nodes))
-  );
-  public networkEdges = this.select("networkEdges");
 
   public hoveredEvent = this.select("hoveredEvent");
   public selectedEventId = this.select("selectedEvent");
@@ -195,50 +194,90 @@ export class DataQuery extends Query<DataState> {
     })
   );
 
-  public rawNetwork: Observable<RawNetwork> = combineLatest([
-    this.networkNodesArray,
-    this.networkEdges,
+  // when two participants show up within the same event, they have an arrow pointing between them
+  public eventParticipantsAsNetwork: Observable<RawNetwork> = combineLatest([
+    this.unfilteredEvents,
+    this.participantsAllEvents,
+    this.networkNodeProps,
   ]).pipe(
-    map(([nodes, edges]) => {
-      return { nodes, edges };
+    map(([unfilteredEvents, participantsAllEvents, networkNodeProps]) => {
+      const eventParticipants = unfilteredEvents
+        .filter((event) => event.participants !== undefined)
+        .map((event) => event.participants) as AgentID[][];
+      const edges = new Array<RawNetwork["edges"][number]>();
+      // TODO terrible performance, add tests & improve thru tdd
+      eventParticipants.forEach((participants) => {
+        participants.forEach((participant) => {
+          participants.forEach((otherParticipant) => {
+            if (otherParticipant !== participant) {
+              // no reversed edges
+              if (
+                edges.filter(
+                  (edge) =>
+                    edge.origin === participant ||
+                    edge.target === participant ||
+                    edge.origin === otherParticipant ||
+                    edge.target === otherParticipant
+                ).length === 0
+              ) {
+                edges.push({
+                  target: participant as any as NodeID,
+                  origin: otherParticipant as any as NodeID,
+                });
+              }
+            }
+          });
+        });
+      });
+
+      return {
+        edges: [...edges],
+        nodes: [...participantsAllEvents].map((participant) => {
+          return {
+            id: participant as any as NodeID,
+            renderedProps:
+              networkNodeProps[participant as any as NodeID] || undefined,
+          };
+        }),
+      };
     })
   );
 
-  public adjMat: Observable<AdjacencyMatrix> = this.rawNetwork.pipe(
-    map((network) => rawNetworkToAdjMat(network)),
-    startWith([])
-  );
+  public eventAdjMat: Observable<AdjacencyMatrix> =
+    this.eventParticipantsAsNetwork.pipe(
+      map((network) => rawNetworkToAdjMat(network)),
+      startWith([])
+    );
 
-  public renderableNetworkNodes: Observable<RenderableNetworkNode[]> =
-    this.networkNodesArray.pipe(
-      map((nodes) => {
+  public renderableEventNetworkNodes: Observable<RenderableNetworkNode[]> =
+    this.eventParticipantsAsNetwork.pipe(
+      map(({ nodes }) => {
         //z
         // const placements = forceDirectedGraph({ G: adjMat, H: 100 });
         const filtered = nodes.filter(
           ({ renderedProps }) => renderedProps !== undefined
         );
-        console.log("TEST123-filter", filtered);
         return filtered as RenderableNetworkNode[];
       })
     );
 
-  public renderableEdges: Observable<RenderableNetworkEdge[]> = combineLatest([
-    this.renderableNetworkNodes,
-    this.networkEdges,
-  ]).pipe(
-    map(([nodes, edges]) => {
-      console.log("TEST123-edges", nodes, edges);
-      return edges.map((edge) => {
-        return {
-          ...edge,
-          renderedProps: {
-            originPosition: nodes[edge.origin].renderedProps.position,
-            targetPosition: nodes[edge.target].renderedProps.position,
-          },
-        };
-      });
-    })
-  );
+  public renderableEventEdges: Observable<RenderableNetworkEdge[]> =
+    combineLatest([
+      this.renderableEventNetworkNodes,
+      this.eventParticipantsAsNetwork,
+    ]).pipe(
+      map(([nodes, { edges }]) => {
+        return edges.map((edge) => {
+          return {
+            ...edge,
+            renderedProps: {
+              originPosition: nodes[edge.origin].renderedProps.position,
+              targetPosition: nodes[edge.target].renderedProps.position,
+            },
+          };
+        });
+      })
+    );
 
   public initialDateFilter = this.select("initialDateFilter");
   public finalDateFilter = this.select("finalDateFilter");
@@ -385,12 +424,12 @@ export class DataQuery extends Query<DataState> {
   //   desc: hitEvent.eventInfo,
   //   title: hitEvent.eventName,
   // }
-  public hoveredEventInfo = combineLatest([
+  public selectedEventInfo = combineLatest([
     this.events,
-    this.hoveredEvent,
+    this.selectedEventId,
   ]).pipe(
-    map(([events, hoveredEvent]) => {
-      const event = events.find(({ id }) => id === hoveredEvent);
+    map(([events, selectedEvent]) => {
+      const event = events.find(({ id }) => id === selectedEvent);
       if (!event) {
         return null;
       }
@@ -415,27 +454,27 @@ export class DataQuery extends Query<DataState> {
         return { title: "Adjacency Matrix", desc: `${val[0]}, ${val[1]}` };
       })
     );
-  public hoveredNetworkNodeEventInfo: Observable<InfoPanelDateElement | null> =
-    this.hoveredNetworkNode.pipe(
-      map((val) => {
-        if (!val) {
+  public selectedNetworkNodeEventInfo: Observable<InfoPanelDateElement | null> =
+    combineLatest([this.selectedNetworkNode, this.agents]).pipe(
+      map(([val, agents]) => {
+        if (val === null) {
           return null;
         }
-        return { title: "Network", desc: `${val}` };
+        return { title: "Network", desc: `${agents[val].name}` };
       })
     );
   public infoPanelElements: Observable<InfoPanelDateElement[]> = combineLatest([
-    this.hoveredEventInfo,
+    this.selectedEventInfo,
     this.adjMatCellEventInfo,
-    this.hoveredNetworkNodeEventInfo,
+    this.selectedNetworkNodeEventInfo,
   ]).pipe(
     map(
       ([
-        hoveredEventInfo,
+        selectedEventInfo,
         adjMatCellEventInfo,
         hoveredNetworkNodeEventInfo,
       ]) => {
-        const eventElements = hoveredEventInfo ? [hoveredEventInfo] : [];
+        const eventElements = selectedEventInfo ? [selectedEventInfo] : [];
         const hoveredNetworkNodeElements = hoveredNetworkNodeEventInfo
           ? [hoveredNetworkNodeEventInfo]
           : [];

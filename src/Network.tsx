@@ -22,6 +22,7 @@ type NodesComponentProps = {
   highlightedNode: NodeID | null;
   edges: RenderableNetworkEdge[];
   onMouseOver: (id: NodeID, event: KonvaEventObject<MouseEvent>) => void;
+  onSelectNode: (id: NodeID, event: KonvaEventObject<MouseEvent>) => void;
   onMouseLeave: (id: NodeID, event: KonvaEventObject<MouseEvent>) => void;
 };
 export function NetworkNodes({
@@ -29,6 +30,7 @@ export function NetworkNodes({
   edges,
   onMouseOver,
   onMouseLeave,
+  onSelectNode,
   highlightedNode,
   updateEdgePositions,
 }: // onMouseMove,
@@ -37,7 +39,6 @@ NodesComponentProps): JSX.Element {
     <Group>
       {/* TODO maybe pass a ref to the right circles to the edge obj? */}
       {nodes.map((node) => {
-        console.log("TEST123-node");
         return (
           <Circle
             draggable
@@ -45,6 +46,7 @@ NodesComponentProps): JSX.Element {
             {...node.renderedProps.position}
             onMouseOver={(mouseEvent) => onMouseOver(node.id, mouseEvent)}
             onMouseLeave={(mouseEvent) => onMouseLeave(node.id, mouseEvent)}
+            onMouseUp={(mouseEvent) => onSelectNode(node.id, mouseEvent)}
             // onMouseMove={(mouseEvent) => onMouseMove(event.id, mouseEvent)}
 
             radius={10}
@@ -152,8 +154,19 @@ export function TimelineTooltip({
 
 // function timelineContextProvider = Contextprop
 export function Network({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
-  const [{ adjMat, renderableNetworkNodes: nodes, renderableEdges: edges }] =
-    useData(["renderableNetworkNodes", "adjMat", "renderableEdges"]);
+  const [
+    {
+      eventAdjMat: adjMat,
+      renderableEventNetworkNodes: nodes,
+      renderableEventEdges: edges,
+      selectedNetworkNode,
+    },
+  ] = useData([
+    "renderableEventEdges",
+    "eventAdjMat",
+    "renderableEventNetworkNodes",
+    "selectedNetworkNode",
+  ]);
 
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
   const [highlightedNode, setHighlightedNode] = useState<NodeID | null>(null);
@@ -164,10 +177,10 @@ export function Network({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
       dataService.setNodesFromAdjMat(adjMat);
     }
   }, [JSON.stringify(flatAdjMat)]);
-  console.log("TEST123-nodes", nodes, edges);
+  console.log("TEST123", nodes, adjMat);
   return (
     <>
-      {nodes && (
+      {nodes && nodes.length > 0 && (
         <Stage
           width={stageSize.x}
           height={stageSize.y}
@@ -177,16 +190,19 @@ export function Network({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
             {nodes && edges && (
               <NetworkNodes
                 nodes={nodes}
-                highlightedNode={highlightedNode}
+                // TODO generalize highlighting to allow for multiple different color meanings? or is this more the job of when data is passed in
+                highlightedNode={selectedNetworkNode}
                 edges={edges}
                 onMouseOver={(id) => {
                   dataService.setHoveredNetworkNode(id);
+                }}
+                onSelectNode={(id) => {
+                  dataService.setSelectedNode(id);
                 }}
                 onMouseLeave={() => {
                   setHighlightedNode(null);
                 }}
                 updateEdgePositions={(node, event) => {
-                  console.log("TEST123", event);
                   dataService.moveNode(node, {
                     x: event.target.x() as KonvaSpace,
                     y: event.target.y() as KonvaSpace,

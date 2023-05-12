@@ -1,3 +1,4 @@
+import { AdjacencyMatrix } from "type-library";
 import { forceDirectedGraph } from "../layoutNetwork";
 import {
   EventID,
@@ -7,7 +8,7 @@ import {
   ObjV2,
   TimeSpace,
 } from "../types";
-import { DataStore, NodeLookup, dataStore } from "./data.store";
+import { DataStore, NodePropsLookup, dataStore } from "./data.store";
 type CellID = [number, number];
 
 const getRandomColor = (): HexStr => {
@@ -42,31 +43,24 @@ export class DataService {
   public moveNode(id: NodeID, newPosition: ObjV2<KonvaSpace>) {
     // console.log("TEST123-service", id, newPosition);
     this.dataStore.update((state) => {
-      const mutableNodeLookup: NodeLookup = {
-        ...state.networkNodes,
+      const mutableNodeLookup: NodePropsLookup = {
+        ...state.networkNodeProps,
         [id]: {
-          ...state.networkNodes[id],
-          renderedProps: {
-            ...state.networkNodes[id].renderedProps,
-            position: newPosition,
-          },
+          ...(state.networkNodeProps[id] || { color: "#FFFFFF" }),
+          position: newPosition,
         },
       };
-
-      return { ...state, networkNodes: mutableNodeLookup };
+      return { ...state, networkNodeProps: mutableNodeLookup };
     });
   }
 
   public recolorNode(id: NodeID, newColor: HexStr) {
     this.dataStore.update((state) => {
-      const mutableNodeLookup: NodeLookup = {
-        ...state.networkNodes,
+      const mutableNodeLookup: NodePropsLookup = {
+        ...state.networkNodeProps,
         [id]: {
-          ...state.networkNodes[id],
-          renderedProps: {
-            ...state.networkNodes[id].renderedProps,
-            color: newColor,
-          },
+          ...state.networkNodeProps[id],
+          color: newColor,
         },
       };
 
@@ -74,7 +68,7 @@ export class DataService {
     });
   }
 
-  public setNodesFromAdjMat(adjMat: AdjacencyMatrix) {
+  public setNodesFromAdjMat(adjMat: AdjacencyMatrix<0 | 1 | -1>) {
     const placements = forceDirectedGraph({ G: adjMat, H: 300, W: 300 });
 
     placements.forEach((placement, ii) => {
@@ -99,6 +93,11 @@ export class DataService {
   public setSelectedEvent(eventId: EventID) {
     this.dataStore.update((state) => {
       return { ...state, selectedEvent: eventId };
+    });
+  }
+  public setSelectedNode(nodeID: NodeID) {
+    this.dataStore.update((state) => {
+      return { ...state, selectedNetworkNode: nodeID };
     });
   }
   public setHoveredAdjMatCell(cellID: CellID) {

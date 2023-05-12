@@ -75,6 +75,8 @@ export const periodIsSegmentGuard = (
 
 export type NetworkNode = {
   id: NodeID;
+
+  renderedProps?: { position: ObjV2<KonvaSpace>; color: HexStr };
 };
 export type RenderableNetworkNode = NetworkNode & {
   renderedProps: { position: ObjV2<KonvaSpace>; color: HexStr };

@@ -6,77 +6,25 @@ import type {
   HexStr,
   HistoricalEvent,
   KonvaSpace,
-  NetworkEdge,
-  NetworkNode,
   NodeID,
   ObjV2,
   TimeSpace,
 } from "../types";
-export type NodeLookup = Record<
-  NodeID,
-  NetworkNode & {
-    renderedProps?: { position: ObjV2<KonvaSpace>; color: HexStr };
-  }
->;
-const nodesLookup: NodeLookup = {
-  [0 as NodeID]: {
-    id: 0 as NodeID,
-  },
-  [1 as NodeID]: {
-    id: 1 as NodeID,
-  },
-  [2 as NodeID]: {
-    id: 2 as NodeID,
-  },
-  [3 as NodeID]: {
-    id: 3 as NodeID,
-  },
-  [4 as NodeID]: {
-    id: 4 as NodeID,
-  },
-  [5 as NodeID]: {
-    id: 5 as NodeID,
-  },
-};
 
-const edges: NetworkEdge[] = [
-  {
-    target: 0 as NodeID,
-    origin: 1 as NodeID,
-  },
-  {
-    target: 0 as NodeID,
-    origin: 2 as NodeID,
-  },
-  {
-    target: 0 as NodeID,
-    origin: 3 as NodeID,
-  },
-  {
-    target: 0 as NodeID,
-    origin: 4 as NodeID,
-  },
-  {
-    target: 0 as NodeID,
-    origin: 5 as NodeID,
-  },
-  {
-    target: 1 as NodeID,
-    origin: 5 as NodeID,
-  },
-];
+type NodeRenderProps = { position: ObjV2<KonvaSpace>; color: HexStr };
+export type NodePropsLookup = Record<NodeID, NodeRenderProps>;
 
 export interface DataState {
   hoveredEvent: EventID | null;
   selectedEvent: EventID | null;
   hoveredAdjMatCell: ArrV2 | null;
   hoveredNetworkNode: NodeID | null;
+  selectedNetworkNode: NodeID | null;
   events: HistoricalEvent[];
   agents: Agent[];
   initialDateFilter: TimeSpace | null;
   finalDateFilter: TimeSpace | null;
-  networkNodes: NodeLookup;
-  networkEdges: NetworkEdge[];
+  networkNodeProps: NodePropsLookup;
 }
 
 // TODO persist
@@ -85,8 +33,8 @@ export function createInitialState(): DataState {
     hoveredAdjMatCell: null,
     hoveredEvent: null,
     hoveredNetworkNode: null,
-    networkNodes: nodesLookup,
-    networkEdges: edges,
+    selectedNetworkNode: null,
+    networkNodeProps: {},
     agents: [
       { id: 0, name: "Lithuania" },
       { id: 1, name: "Poland" },
