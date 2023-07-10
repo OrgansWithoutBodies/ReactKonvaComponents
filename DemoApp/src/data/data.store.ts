@@ -1,4 +1,4 @@
-import { Store, StoreConfig } from "@datorama/akita";
+import { Store } from "@datorama/akita";
 import type {
   Agent,
   ArrV2,
@@ -9,7 +9,7 @@ import type {
   NodeID,
   ObjV2,
   TimeSpace,
-} from "../types";
+} from "../../src/types";
 
 type NodeRenderProps = { position: ObjV2<KonvaSpace>; color: HexStr };
 export type NodePropsLookup = Record<NodeID, NodeRenderProps>;
@@ -146,7 +146,7 @@ export function createInitialState(): DataState {
   };
 }
 
-@StoreConfig({ name: "data" })
+// @StoreConfig({ name: "data" })
 export class DataStore extends Store<DataState> {
   constructor() {
     super(createInitialState());

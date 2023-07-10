@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@datorama/akita": "^8.0.1",
     "geometry-helpers": "link:../Coordinates/geometry-helpers/",
     "konva": "^9.0.1",
     "leaflet": "^1.9.4",

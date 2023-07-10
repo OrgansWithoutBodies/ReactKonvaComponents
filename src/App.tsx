@@ -5,8 +5,8 @@ import {
 import "./App.css";
 
 import { useEffect, useRef, useState } from "react";
-import { AdjacencyMatrix } from "./AdjacencyMatrixComponent";
 import { InfoPanel } from "./InfoPanel";
+import { MapComponent } from "./MapComponent";
 import { Network } from "./Network";
 import { FilterEvents, Timeline } from "./Timeline";
 import { ObjV2 } from "./types";
@@ -69,7 +69,7 @@ function App() {
               border: "3px solid black",
             }}
           >
-            <AdjacencyMatrix />
+            {/* <AdjacencyMatrixGridComponent matrices={[]} colorMappers={[]} /> */}
           </div>
           <div
             style={{
@@ -80,6 +80,8 @@ function App() {
           </div>
         </div>
       </div>
+      <MapComponent />
+
       {/* </div> */}
       {/* TEST */}
       {/* </Panel>

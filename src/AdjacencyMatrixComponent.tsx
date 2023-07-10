@@ -1,12 +1,19 @@
 import * as React from "react";
 import { useState } from "react";
-import { Group, Layer, Rect, Stage } from "react-konva";
+import { Circle, Group, Layer, Rect, Stage } from "react-konva";
 import type {
   AdjacencyMatrix,
   ColorNumberArraySolid,
   ColumnID,
+  NodeID,
 } from "type-library";
-import { ArrV2, ObjV2 } from "./types";
+import { NetworkComponent } from "./Network";
+import {
+  ArrV2,
+  RawNetwork as GenericRawNetwork,
+  ObjV2,
+  RenderableNetworkNode,
+} from "./types";
 // yellow x<-1
 // blue -1>x>0
 // red - 0>x>1
@@ -100,6 +107,7 @@ export const SubtractMatrix: AdjacencyMatrix<AnyNum | AnyNum[]> = [
   [posAbove1, posAbove1, positive, unk],
 ];
 
+// TODO just bring this into color mapper?
 const ColorNumberArrayToHexString = ([R, G, B]: ColorNumberArraySolid) => {
   // console.log("TEST123", R, G, B);
   return `#${R.toString(16).padStart(2, "0")}${G.toString(16).padStart(
@@ -117,7 +125,7 @@ type ColorMapper<TNum> = (
 export function Grid<TData>({
   data,
   CellComponent,
-  SliceComponent=({children})=><>{children}</>,
+  SliceComponent = ({ children }) => <>{children}</>,
 }: {
   data: TData[][];
   CellComponent: ({
@@ -129,26 +137,65 @@ export function Grid<TData>({
     jj: number;
     cell: TData;
   }) => JSX.Element;
-  SliceComponent: ({
+  SliceComponent?: ({
     ii,
     slice,
   }: React.PropsWithChildren & {
     ii: number;
     slice: TData[];
   }) => JSX.Element;
+}): JSX.Element {
+  return (
+    <>
+      {data.map((slice, ii) => {
+        return (
+          <SliceComponent ii={ii} slice={slice}>
+            {slice.map((cell, jj) => {
+              // console.log("TEST123", [ii, jj], selected.includes([ii, jj]));
+              return <CellComponent ii={ii} jj={jj} cell={cell} />;
+            })}
+          </SliceComponent>
+        );
+      })}
+    </>
+  );
+}
+
+export function AdjacencyMatrixCellComponent<TValue = number>({
+  onMouseEnterCell,
+  ii,
+  jj,
+  cellSize,
+  cell,
+  selecteds,
+  colorMapper,
+}: {
+  cellSize: number;
+  ii: number;
+  jj: number;
+  cell: any;
+  onMouseEnterCell?: (ii: ColumnID, jj: ColumnID) => void;
+  colorMapper: ColorMapper<TValue>;
+  selecteds?: ArrV2[];
 }) {
-  {
-    data.map((slice, ii) => {
-      return (
-        <SliceComponent ii={ii} slice={slice}>
-          {slice.map((cell, jj) => {
-            // console.log("TEST123", [ii, jj], selected.includes([ii, jj]));
-            return <CellComponent ii={ii} jj={jj} cell={cell} />;
-          })}
-        </SliceComponent>
-      );
-    });
-  }
+  return (
+    <Rect
+      onMouseEnter={() =>
+        onMouseEnterCell && onMouseEnterCell(ii as ColumnID, jj as ColumnID)
+      }
+      stroke={"#000000"}
+      width={1 * cellSize}
+      height={1 * cellSize}
+      x={jj * cellSize}
+      fill={
+        selecteds && selecteds.includes([ii, jj])
+          ? "#FF0000"
+          : ColorNumberArrayToHexString(colorMapper(cell.value, ii, jj))
+      }
+      strokeWidth={3}
+      // fill={[255,0,0]}
+    />
+  );
 }
 // TODO might be worthwhile specifying some stuff here in terms of index?
 export function AdjacencyMatrixComponent<TValue = number>({
@@ -170,44 +217,95 @@ export function AdjacencyMatrixComponent<TValue = number>({
   const cellSize = 30;
 
   return (
-    <Layer x={layerPosition.x} y={layerPosition.y}>
-      {adjMatData.map((slice, ii) => {
-        return (
-          <Group y={ii * cellSize}>
-            {slice.map((cell, jj) => {
-              // console.log("TEST123", [ii, jj], selected.includes([ii, jj]));
-              return (
-                <Rect
-                  onMouseEnter={() =>
-                    onMouseEnterCell &&
-                    onMouseEnterCell(ii as ColumnID, jj as ColumnID)
-                  }
-                  stroke={"#000000"}
-                  width={1 * cellSize}
-                  height={1 * cellSize}
-                  x={jj * cellSize}
-                  fill={
-                    selecteds && selecteds.includes([ii, jj])
-                      ? "#FF0000"
-                      : ColorNumberArrayToHexString(
-                          colorMapper(cell.value, ii, jj)
-                        )
-                  }
-                  strokeWidth={3}
-                  // fill={[255,0,0]}
-                />
-              );
-            })}
-          </Group>
-        );
-      })}
+    <Group x={layerPosition.x} y={layerPosition.y}>
+      <Grid
+        data={adjMatData}
+        CellComponent={({ ii, jj, cell }) => (
+          <AdjacencyMatrixCellComponent
+            cellSize={cellSize}
+            ii={ii}
+            jj={jj}
+            cell={cell}
+            colorMapper={colorMapper}
+            selecteds={selecteds}
+          />
+        )}
+        SliceComponent={({ ii, children }) => (
+          <Group y={ii * cellSize}>{children}</Group>
+        )}
+      />
+    </Group>
+  );
+}
+export function EncapsulatedAdjacencyMatrixComponent(
+  args: Parameters<typeof AdjacencyMatrixComponent>[0]
+): JSX.Element {
+  const n = args["adjMatData"].length;
+
+  const matrixSize = n * 30;
+  const diameter = Math.sqrt(matrixSize ** 2 + matrixSize ** 2);
+  return (
+    <Layer {...args["layerPosition"]}>
+      <Circle
+        x={matrixSize / 2}
+        y={matrixSize / 2}
+        radius={diameter / 2}
+        stroke={"black"}
+        strokeWidth={3}
+      />
+      <AdjacencyMatrixComponent {...args} layerPosition={{ x: 0, y: 0 }} />
     </Layer>
   );
 }
+export function AdjacencyMatrixGridComponent({
+  matrices,
+  colorMappers,
+}: {
+  matrices: AdjacencyMatrix<AdjacencyMatrix<any>>;
+  colorMappers: AdjacencyMatrix<ColorMapper<number>>;
+}) {
+  const stageSize = { x: 500, y: 500 };
+  const paddingAroundMatrices = 10;
+  // n assumed all equal
+  const n = matrices[0][0].length;
 
-export function AdjacencyMatrix() {
+  const matrixSize = n * 30;
+  const diameter = Math.sqrt(matrixSize ** 2 + matrixSize ** 2);
+
+  const paddingBetweenMatrices = 10;
+  return (
+    <Stage
+      width={stageSize.x}
+      height={stageSize.y}
+      style={{ backgroundColor: "white" }}
+      x={0}
+      y={0}
+    >
+      <Grid
+        data={matrices}
+        CellComponent={function ({ ii, jj, cell }) {
+          return (
+            <EncapsulatedAdjacencyMatrixComponent
+              adjMatData={cell}
+              colorMapper={colorMappers[ii][jj]}
+              layerPosition={{
+                x: ii * (diameter + paddingBetweenMatrices),
+                y: jj * (diameter + paddingBetweenMatrices),
+              }}
+            />
+          );
+        }}
+      />
+    </Stage>
+  );
+}
+// TODO figure out diffference between groups & layers
+// maybe use one for 'windowing'?
+
+export function AdjacencyMatrixGrid() {
   const n = 4;
-  const adjMatData: AdjacencyMatrix<{ value: number }> = new Array(n)
+  // only used for shape
+  const dummyData: AdjacencyMatrix<{ value: number }> = new Array(n)
     .fill(0)
     .map((val) => new Array(n).fill({ value: 1 }));
   const [selected, setSelected] = useState<ArrV2<ColumnID> | null>(null);
@@ -225,34 +323,62 @@ export function AdjacencyMatrix() {
   };
   const stageSize = { x: 500, y: 500 };
 
+  // TODO rubiks cube
+  // TODO rubiks cube move network/3d + textures
+  // TODO arrows between adjmats? abstract network more, add "nodeHandles" for where arrows go
+  // TODO think abt what 'fusion between multiply & subtract' would mean matrix wise (ie do operation that goes from + -> - & apply that operation to * or /)
   return (
-    <Stage
-      width={stageSize.x}
-      height={stageSize.y}
-      style={{ backgroundColor: "white" }}
-      x={0}
-      y={0}
-    >
-      <AdjacencyMatrixComponent
-        colorMapper={addColorMapper}
-        adjMatData={adjMatData}
-        layerPosition={{ x: 0, y: 0 }}
+    <AdjacencyMatrixGridComponent
+      matrices={[
+        [dummyData, dummyData],
+        [dummyData, dummyData],
+        [dummyData, dummyData],
+      ]}
+      colorMappers={[
+        [addColorMapper, subColorMapper],
+        [multColorMapper, divColorMapper],
+        [multColorMapper, divColorMapper],
+      ]}
+    />
+  );
+}
+
+type NetworkNode = {
+  id: NodeID;
+};
+
+type NetworkEdge = {
+  origin: NodeID;
+  target: NodeID;
+};
+type GenericRawNetwork<TNode extends NetworkNode, TEdge extends NetworkEdge> = {
+  edges: TEdge[];
+  nodes: TNode[];
+};
+
+export function AdjacencyMatrixNetworkComponent({
+  nodes,
+  edges,
+}: GenericRawNetwork<
+  NetworkNode & {
+    adjMat: AdjacencyMatrix<number>;
+    colorMapper: ColorMapper<number>;
+  },
+  NetworkEdge
+>) {
+  return (
+    <>
+      <NetworkComponent
+        stageSize={stageSize}
+        nodes={nodes}
+        edges={edges}
+        NodeTemplate={({node})=>
+          <EncapsulatedAdjacencyMatrixComponent
+            adjMatData={node.adjMat}
+            colorMapper={node.colorMapper}
+             
+          /> }
       />
-      <AdjacencyMatrixComponent
-        colorMapper={subColorMapper}
-        adjMatData={adjMatData}
-        layerPosition={{ x: 130, y: 0 }}
-      />
-      <AdjacencyMatrixComponent
-        colorMapper={multColorMapper}
-        adjMatData={adjMatData}
-        layerPosition={{ x: 0, y: 130 }}
-      />
-      <AdjacencyMatrixComponent
-        colorMapper={divColorMapper}
-        adjMatData={adjMatData}
-        layerPosition={{ x: 130, y: 130 }}
-      />
-    </Stage>
+    </>
   );
 }

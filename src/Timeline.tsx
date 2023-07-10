@@ -15,7 +15,6 @@ import {
   TimelineVariables,
   useTimelineContext,
 } from "./TimelineContext";
-import { dataService } from "./data/data.service";
 import { orderedNumbers } from "./orderedNumbers";
 import {
   EventID,
@@ -24,7 +23,6 @@ import {
   TimeSpace,
   TimelineSpace,
 } from "./types";
-import { useData } from "./useAkita";
 
 export function TimelineBackground({
   lastDate,
@@ -229,22 +227,38 @@ export function TimelineTooltip({
 }
 
 // function timelineContextProvider = Contextprop
-export function Timeline({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
+export function Timeline({
+  stageSize,
+  events,
+  latestEventEnd,
+  earliestEventStart,
+  onSelectEvent,
+  onHoveredEvent,
+  selectedEventId,
+}: {
+  stageSize: ObjV2;
+  onHoveredEvent: (id: string) => void;
+  onSelectEvent: (id: string) => void;
+  events: any;
+  latestEventEnd: any;
+  earliestEventStart: any;
+  selectedEventId: any;
+}): JSX.Element {
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
-  const [
-    {
-      renderReadyEvents: events,
-      finalDateFilterWithFallback: latestEventEnd,
-      initialDateFilterWithFallback: earliestEventStart,
-      selectedEventId,
-    },
-  ] = useData([
-    "renderReadyEvents",
-    "finalDateFilterWithFallback",
+  // const [
+  //   {
+  //     renderReadyEvents: events,
+  //     finalDateFilterWithFallback: latestEventEnd,
+  //     initialDateFilterWithFallback: earliestEventStart,
+  //     selectedEventId,
+  //   },
+  // ] = useData([
+  //   "renderReadyEvents",
+  //   "finalDateFilterWithFallback",
 
-    "initialDateFilterWithFallback",
-    "selectedEventId",
-  ]);
+  //   "initialDateFilterWithFallback",
+  //   "selectedEventId",
+  // ]);
 
   return (
     <TimelineContext.Provider value={TimelineVariables}>
@@ -272,7 +286,7 @@ export function Timeline({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
                   ({ id: sourceId }) => sourceId === id
                 );
                 if (hitEvent) {
-                  dataService.setHoveredEvent(hitEvent.id);
+                  onHoveredEvent(hitEvent.id);
                 }
               }}
               onSelectEvent={function (
@@ -283,7 +297,7 @@ export function Timeline({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
                   ({ id: sourceId }) => sourceId === id
                 );
                 if (hitEvent) {
-                  dataService.setSelectedEvent(hitEvent.id);
+                  onSelectEvent(hitEvent.id);
                 }
               }}
               onMouseLeave={function (): void {
@@ -304,77 +318,77 @@ export function Timeline({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
   );
 }
 
-export function FilterEvents(): JSX.Element {
-  const [
-    {
-      initialDateFilter,
-      finalDateFilter,
-      unfilteredEarliestEventStart: earliestEventStart,
-      unfilteredLatestEventEnd: latestEventEnd,
-      numberEventsAfterFilter,
-    },
-  ] = useData([
-    "initialDateFilter",
-    "finalDateFilter",
-    "unfilteredEarliestEventStart",
-    "unfilteredLatestEventEnd",
-    "numberEventsAfterFilter",
-  ]);
-  return (
-    <>
-      {latestEventEnd && earliestEventStart && (
-        <>
-          <div>
-            <div>Start Filter</div>
-            <input
-              type="number"
-              min={earliestEventStart}
-              max={latestEventEnd}
-              value={
-                initialDateFilter !== null
-                  ? initialDateFilter
-                  : earliestEventStart
-              }
-              onChange={(event) => {
-                const inputValue = Number.parseInt(
-                  event.target.value
-                ) as TimeSpace;
-                if (
-                  inputValue >= earliestEventStart &&
-                  inputValue <= latestEventEnd
-                ) {
-                  dataService.setInitialDateFilter(inputValue);
-                }
-              }}
-            />
-          </div>
-          <div>
-            <div>End Filter</div>
-            <input
-              type="number"
-              min={earliestEventStart}
-              max={latestEventEnd}
-              value={
-                finalDateFilter !== null ? finalDateFilter : latestEventEnd
-              }
-              onChange={(event) => {
-                const inputValue = Number.parseInt(
-                  event.target.value
-                ) as TimeSpace;
-                if (
-                  inputValue >= earliestEventStart &&
-                  inputValue <= latestEventEnd
-                ) {
-                  dataService.setFinalDateFilter(inputValue);
-                }
-              }}
-            />
-          </div>
-        </>
-      )}{" "}
-    </>
-  );
-}
+// export function FilterEvents(): JSX.Element {
+//   const [
+//     {
+//       initialDateFilter,
+//       finalDateFilter,
+//       unfilteredEarliestEventStart: earliestEventStart,
+//       unfilteredLatestEventEnd: latestEventEnd,
+//       numberEventsAfterFilter,
+//     },
+//   ] = useData([
+//     "initialDateFilter",
+//     "finalDateFilter",
+//     "unfilteredEarliestEventStart",
+//     "unfilteredLatestEventEnd",
+//     "numberEventsAfterFilter",
+//   ]);
+//   return (
+//     <>
+//       {latestEventEnd && earliestEventStart && (
+//         <>
+//           <div>
+//             <div>Start Filter</div>
+//             <input
+//               type="number"
+//               min={earliestEventStart}
+//               max={latestEventEnd}
+//               value={
+//                 initialDateFilter !== null
+//                   ? initialDateFilter
+//                   : earliestEventStart
+//               }
+//               onChange={(event) => {
+//                 const inputValue = Number.parseInt(
+//                   event.target.value
+//                 ) as TimeSpace;
+//                 if (
+//                   inputValue >= earliestEventStart &&
+//                   inputValue <= latestEventEnd
+//                 ) {
+//                   dataService.setInitialDateFilter(inputValue);
+//                 }
+//               }}
+//             />
+//           </div>
+//           <div>
+//             <div>End Filter</div>
+//             <input
+//               type="number"
+//               min={earliestEventStart}
+//               max={latestEventEnd}
+//               value={
+//                 finalDateFilter !== null ? finalDateFilter : latestEventEnd
+//               }
+//               onChange={(event) => {
+//                 const inputValue = Number.parseInt(
+//                   event.target.value
+//                 ) as TimeSpace;
+//                 if (
+//                   inputValue >= earliestEventStart &&
+//                   inputValue <= latestEventEnd
+//                 ) {
+//                   dataService.setFinalDateFilter(inputValue);
+//                 }
+//               }}
+//             />
+//           </div>
+//         </>
+//       )}{" "}
+//     </>
+//   );
+// }
 
 // TODO use timeline as "scrubber" to filter time (potentially two handles)
 

@@ -3,8 +3,8 @@ import { pick } from "rambdax";
 import { Observable, ObservedValueOf } from "rxjs";
 
 import { useEffect, useState } from "react";
-import { dataQuery } from "./data/data.query";
-import { dataService } from "./data/data.service";
+import { dataQuery } from "../DemoApp/data/data.query";
+import { dataService } from "../DemoApp/data/data.service";
 
 type StateShapeDefault = {};
 type SubscribedQueryKeys<TQuery extends Query<StateShapeDefault>> =

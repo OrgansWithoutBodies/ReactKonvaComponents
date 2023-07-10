@@ -1,5 +1,5 @@
+import { useData } from "../DemoApp/src/useAkita";
 import { InfoPanelDateElement } from "./types";
-import { useData } from "./useAkita";
 
 // TODO abstract this a bit - maybe drive from query?
 export function InfoElement({

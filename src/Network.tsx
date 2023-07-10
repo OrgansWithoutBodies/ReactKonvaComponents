@@ -1,8 +1,8 @@
 import { KonvaEventObject } from "konva/lib/Node";
 import { useEffect, useState } from "react";
 import { Arrow, Circle, Group, Layer, Rect, Stage, Text } from "react-konva";
+import { ArrV4 } from "type-library/dist/vectors";
 import { TimelineVariables, useTimelineContext } from "./TimelineContext";
-import { dataService } from "./data/data.service";
 import {
   KonvaSpace,
   NodeID,
@@ -11,62 +11,75 @@ import {
   RenderableNetworkNode,
   TimelineSpace,
 } from "./types";
-import { useData } from "./useAkita";
 
-type NodesComponentProps = {
+export type NodesComponentProps = {
   nodes: RenderableNetworkNode[];
-  updateEdgePositions: (
-    node: NodeID,
-    event: KonvaEventObject<MouseEvent>
-  ) => void;
+  onNodeMove: (node: NodeID, event: KonvaEventObject<MouseEvent>) => void;
   highlightedNode: NodeID | null;
   edges: RenderableNetworkEdge[];
   onMouseOver: (id: NodeID, event: KonvaEventObject<MouseEvent>) => void;
   onSelectNode: (id: NodeID, event: KonvaEventObject<MouseEvent>) => void;
   onMouseLeave: (id: NodeID, event: KonvaEventObject<MouseEvent>) => void;
+
+  NodeTemplate: ({
+    node,
+  }: {
+    node: NodesComponentProps["nodes"][number];
+  }) => JSX.Element;
 };
-export function NetworkNodes({
-  nodes,
-  edges,
+export function NetworkNodeTemplate({
+  node,
+
   onMouseOver,
   onMouseLeave,
   onSelectNode,
   highlightedNode,
-  updateEdgePositions,
+  onNodeMove,
+}: Pick<
+  NodesComponentProps,
+  | "onMouseLeave"
+  | "onSelectNode"
+  | "onMouseOver"
+  | "onNodeMove"
+  | "highlightedNode"
+> & {
+  node: NodesComponentProps["nodes"][number];
+}): JSX.Element {
+  return (
+    <Circle
+      {...node.renderedProps.position}
+      draggable
+      onDragMove={(nodeObj) => onNodeMove(node.id, nodeObj)}
+      onMouseOver={(mouseEvent) => onMouseOver(node.id, mouseEvent)}
+      onMouseLeave={(mouseEvent) => onMouseLeave(node.id, mouseEvent)}
+      onMouseUp={(mouseEvent) => onSelectNode(node.id, mouseEvent)}
+      radius={10}
+      fill={highlightedNode === node.id ? "yellow" : node.renderedProps.color}
+      stroke="black"
+      strokeWidth={2}
+    />
+  );
+}
+export function NetworkNodes({
+  nodes,
+  edgePositions,
+  NodeTemplate,
 }: // onMouseMove,
-NodesComponentProps): JSX.Element {
+Pick<NodesComponentProps, "nodes" | "NodeTemplate"> & {
+  edgePositions: ArrV4<KonvaSpace>[];
+}): JSX.Element {
+  // TODO useeffect hook here for node changing position
   return (
     <Group>
       {/* TODO maybe pass a ref to the right circles to the edge obj? */}
-      {nodes.map((node) => {
-        return (
-          <Circle
-            draggable
-            onDragMove={(event) => updateEdgePositions(node.id, event)}
-            {...node.renderedProps.position}
-            onMouseOver={(mouseEvent) => onMouseOver(node.id, mouseEvent)}
-            onMouseLeave={(mouseEvent) => onMouseLeave(node.id, mouseEvent)}
-            onMouseUp={(mouseEvent) => onSelectNode(node.id, mouseEvent)}
-            // onMouseMove={(mouseEvent) => onMouseMove(event.id, mouseEvent)}
-
-            radius={10}
-            fill={
-              highlightedNode === node.id ? "yellow" : node.renderedProps.color
-            }
-            stroke="black"
-            strokeWidth={2}
-          />
-        );
+      {nodes.map((node, ii) => {
+        return <NodeTemplate key={`node-${ii}`} node={node} />;
       })}
-      {edges.map((edge) => {
+      {edgePositions.map((edge) => {
         return (
           <Arrow
-            points={[
-              edge.renderedProps.originPosition.x,
-              edge.renderedProps.originPosition.y,
-              edge.renderedProps.targetPosition.x,
-              edge.renderedProps.targetPosition.y,
-            ]}
+            key={`edge-${edge}`}
+            points={edge}
             stroke="black"
             strokeWidth={2}
           />
@@ -152,32 +165,41 @@ export function TimelineTooltip({
   );
 }
 
-// function timelineContextProvider = Contextprop
-export function Network({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
-  const [
-    {
-      eventAdjMat: adjMat,
-      renderableEventNetworkNodes: nodes,
-      renderableEventEdges: edges,
-      selectedNetworkNode,
-    },
-  ] = useData([
-    "renderableEventEdges",
-    "eventAdjMat",
-    "renderableEventNetworkNodes",
-    "selectedNetworkNode",
+export function NetworkComponent<
+  TNode extends RenderableNetworkNode = RenderableNetworkNode,
+  TEdge extends RenderableNetworkEdge = RenderableNetworkEdge
+>({
+  nodes,
+  stageSize,
+  edges,
+  NodeTemplate,
+}: {
+  nodes: TNode[];
+  stageSize: ObjV2;
+  edges: TEdge[];
+  NodeTemplate: NodesComponentProps["NodeTemplate"];
+}): JSX.Element {
+  const [edgePositions, setEdgePositions] = useState<ArrV4<KonvaSpace>[]>([]);
+  const nodePositions = [...nodes].map((node) => [
+    { ...node }.renderedProps.position.x,
+    { ...node }.renderedProps.position.y,
   ]);
-
-  const [tooltip, setTooltip] = useState<Tooltip | null>(null);
-  const [highlightedNode, setHighlightedNode] = useState<NodeID | null>(null);
-  const flatAdjMat = adjMat ? adjMat.flat() : [];
-
   useEffect(() => {
-    if (adjMat) {
-      dataService.setNodesFromAdjMat(adjMat);
-    }
-  }, [JSON.stringify(flatAdjMat)]);
-  // console.log("TEST123", nodes, adjMat);
+    console.log("TEST123-effect", nodePositions);
+    const newEdgePositions = edges.map((edge) => {
+      const originNode = nodes.find((node) => node.id === edge.origin);
+      const targetNode = nodes.find((node) => node.id === edge.target);
+      return [
+        originNode!.renderedProps.position.x,
+        originNode!.renderedProps.position.y,
+        targetNode!.renderedProps.position.x,
+        targetNode!.renderedProps.position.y,
+      ] as ArrV4<KonvaSpace>;
+    });
+    setEdgePositions(newEdgePositions);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodePositions]);
+
   return (
     <>
       {nodes && nodes.length > 0 && (
@@ -189,31 +211,17 @@ export function Network({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
           <Layer x={TimelineVariables.timelineLeftPadding}>
             {nodes && edges && (
               <NetworkNodes
+                NodeTemplate={NodeTemplate}
                 nodes={nodes}
-                // TODO generalize highlighting to allow for multiple different color meanings? or is this more the job of when data is passed in
-                highlightedNode={selectedNetworkNode}
-                edges={edges}
-                onMouseOver={(id) => {
-                  dataService.setHoveredNetworkNode(id);
-                }}
-                onSelectNode={(id) => {
-                  dataService.setSelectedNode(id);
-                }}
-                onMouseLeave={() => {
-                  setHighlightedNode(null);
-                }}
-                updateEdgePositions={(node, event) => {
-                  dataService.moveNode(node, {
-                    x: event.target.x() as KonvaSpace,
-                    y: event.target.y() as KonvaSpace,
-                  });
-                }}
+                edgePositions={edgePositions}
               />
             )}
-            <TimelineTooltip tooltip={tooltip} />
+            {/* <TimelineTooltip tooltip={tooltip} /> */}
           </Layer>
         </Stage>
       )}
     </>
   );
 }
+
+// TODO generalize highlighting to allow for multiple different color meanings? or is this more the job of when data is passed in
