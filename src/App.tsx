@@ -5,7 +5,7 @@ import {
 import "./App.css";
 
 import { useEffect, useRef, useState } from "react";
-import { AdjacencyMatrixComponent } from "./AdjacencyMatrixComponent";
+import { AdjacencyMatrix } from "./AdjacencyMatrixComponent";
 import { InfoPanel } from "./InfoPanel";
 import { Network } from "./Network";
 import { FilterEvents, Timeline } from "./Timeline";
@@ -69,7 +69,7 @@ function App() {
               border: "3px solid black",
             }}
           >
-            <AdjacencyMatrixComponent />
+            <AdjacencyMatrix />
           </div>
           <div
             style={{

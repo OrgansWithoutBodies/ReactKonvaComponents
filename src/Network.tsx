@@ -177,7 +177,7 @@ export function Network({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
       dataService.setNodesFromAdjMat(adjMat);
     }
   }, [JSON.stringify(flatAdjMat)]);
-  console.log("TEST123", nodes, adjMat);
+  // console.log("TEST123", nodes, adjMat);
   return (
     <>
       {nodes && nodes.length > 0 && (

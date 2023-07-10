@@ -204,34 +204,28 @@ export class DataQuery extends Query<DataState> {
       const eventParticipants = unfilteredEvents
         .filter((event) => event.participants !== undefined)
         .map((event) => event.participants) as AgentID[][];
-      const edges = new Array<RawNetwork["edges"][number]>();
+      const edges = new Set<[AgentID, AgentID]>();
       // TODO terrible performance, add tests & improve thru tdd
-      eventParticipants.forEach((participants) => {
-        participants.forEach((participant) => {
-          participants.forEach((otherParticipant) => {
-            if (otherParticipant !== participant) {
-              // no reversed edges
-              if (
-                edges.filter(
-                  (edge) =>
-                    edge.origin === participant ||
-                    edge.target === participant ||
-                    edge.origin === otherParticipant ||
-                    edge.target === otherParticipant
-                ).length === 0
-              ) {
-                edges.push({
-                  target: participant as any as NodeID,
-                  origin: otherParticipant as any as NodeID,
-                });
+      const addEdgesBetweenAll = (edgeList: AgentID[]) => {
+        edgeList.forEach((agent) => {
+          edgeList
+            .filter((val) => val !== agent)
+            .forEach((otherAgent) => {
+              if (!edges.has([otherAgent as number, agent as number])) {
+                edges.add([agent as number, otherAgent as number]);
+                // console.log("TEST123", edges);
               }
-            }
-          });
+            });
         });
+      };
+      eventParticipants.forEach((participants) => {
+        addEdgesBetweenAll(participants);
       });
 
       return {
-        edges: [...edges],
+        edges: [...edges].distinct().map(([origin, target]) => {
+          return { origin, target };
+        }),
         nodes: [...participantsAllEvents].map((participant) => {
           return {
             id: participant as any as NodeID,
