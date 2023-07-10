@@ -1,6 +1,7 @@
 import { Query } from "@datorama/akita";
 
 import { Observable, combineLatest, map, startWith } from "rxjs";
+import { rawNetworkToAdjMat } from "../../../src/networkTools";
 import {
   AdjacencyMatrix,
   Agent,
@@ -9,7 +10,6 @@ import {
   HistoricalEvent,
   InfoPanelDateElement,
   LineSegment,
-  Matrix,
   NodeID,
   PeriodOrSingleton,
   RawNetwork,
@@ -20,7 +20,7 @@ import {
   TimeSpace,
   TimelineSpace,
   periodIsSegmentGuard,
-} from "../types";
+} from "../../../src/types";
 import { DataState, DataStore, dataStore } from "./data.store";
 
 const formatDates = ({ eventTime }: HistoricalEvent): string => {
@@ -30,38 +30,6 @@ const formatDates = ({ eventTime }: HistoricalEvent): string => {
   }
   return `${eventTime}`;
 };
-
-const createLoL = (dim: number): Matrix<0> =>
-  [...Array.from({ length: dim }).keys()].map(
-    () => [...Array.from({ length: dim }).keys()].fill(0) as 0[]
-  );
-const rawNetworkToAdjMat = (network: RawNetwork): AdjacencyMatrix => {
-  const numNodes = network.nodes.length;
-
-  const adjMat: AdjacencyMatrix = createLoL(numNodes);
-
-  network.nodes.forEach(({ id }, ii) => {
-    const edgesStartingFromThisNode = network.edges
-      .map((edge, ii) => {
-        return { ...edge, index: ii };
-      })
-      .filter((edge) => {
-        return edge.origin === id;
-      });
-    const slice = adjMat[ii];
-    edgesStartingFromThisNode.forEach((edge) => {
-      slice[edge.index] = 1;
-    });
-  });
-
-  return adjMat;
-};
-// const adjMatToRawNetwork = (adjMat: AdjacencyMatrix): RawNetwork => {
-//   const numNodes = adjMat.length;
-//   const nodes = new Array(numNodes).keys();
-//   const edges = [];
-//   return { nodes, edges };
-// };
 
 const getRandomColor = (): HexStr => {
   // return "#FFFFFF";

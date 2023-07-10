@@ -19,6 +19,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "DemoApp/src/d, "DemoApp/src/data/useAkita.ts"ata"],
+  "include": ["src",],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

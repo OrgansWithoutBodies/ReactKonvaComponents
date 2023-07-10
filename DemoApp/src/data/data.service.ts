@@ -1,5 +1,4 @@
 import { AdjacencyMatrix } from "type-library";
-import { forceDirectedGraph } from "../layoutNetwork";
 import {
   EventID,
   HexStr,
@@ -7,7 +6,8 @@ import {
   NodeID,
   ObjV2,
   TimeSpace,
-} from "../types";
+} from "../../../src/types";
+import { forceDirectedGraph } from "../layoutNetwork";
 import { DataStore, NodePropsLookup, dataStore } from "./data.store";
 type CellID = [number, number];
 
@@ -73,8 +73,8 @@ export class DataService {
 
     placements.forEach((placement, ii) => {
       this.moveNode(ii as NodeID, {
-        x: Math.max(placement.x, 0),
-        y: Math.max(placement.y, 0),
+        x: Math.max(placement.x, 0) as KonvaSpace,
+        y: Math.max(placement.y, 0) as KonvaSpace,
       });
       this.recolorNode(ii as NodeID, getRandomColor());
     });

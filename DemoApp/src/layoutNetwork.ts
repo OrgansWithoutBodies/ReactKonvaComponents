@@ -11,13 +11,13 @@
  * Source: http://cs.brown.edu/people/rtamassi/gdhandbook/chapters/force-directed.pdf
  */
 
-import { KonvaSpace, ObjV2 } from "./types";
+import { KonvaSpace, ObjV2 } from "../../src/types";
 
 // The AdjacencyMatrix is represented as a 2D Array of numbers(-1, 1, 1)
 // 1 is to indicate that there is an Edge between two nodes
 // 0 means no Edge
 // -1 Means there is an Edge in the opposite direction
-type AdjacencyMatrix = (-1 | 0 | 1)[][];
+export type AdjacencyMatrix = (-1 | 0 | 1)[][];
 
 interface IVector2D extends ObjV2<KonvaSpace> {
   length: number;

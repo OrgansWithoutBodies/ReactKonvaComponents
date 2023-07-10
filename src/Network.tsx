@@ -1,10 +1,7 @@
 import { KonvaEventObject } from "konva/lib/Node";
-import { useEffect, useState } from "react";
 import { Arrow, Circle, Group, Layer, Rect, Stage, Text } from "react-konva";
-import { ArrV4 } from "type-library/dist/vectors";
 import { TimelineVariables, useTimelineContext } from "./TimelineContext";
 import {
-  KonvaSpace,
   NodeID,
   ObjV2,
   RenderableNetworkEdge,
@@ -62,12 +59,10 @@ export function NetworkNodeTemplate({
 }
 export function NetworkNodes({
   nodes,
-  edgePositions,
+  edges,
   NodeTemplate,
 }: // onMouseMove,
-Pick<NodesComponentProps, "nodes" | "NodeTemplate"> & {
-  edgePositions: ArrV4<KonvaSpace>[];
-}): JSX.Element {
+Pick<NodesComponentProps, "nodes" | "edges" | "NodeTemplate">): JSX.Element {
   // TODO useeffect hook here for node changing position
   return (
     <Group>
@@ -75,11 +70,16 @@ Pick<NodesComponentProps, "nodes" | "NodeTemplate"> & {
       {nodes.map((node, ii) => {
         return <NodeTemplate key={`node-${ii}`} node={node} />;
       })}
-      {edgePositions.map((edge) => {
+      {edges.map((edge) => {
         return (
           <Arrow
             key={`edge-${edge}`}
-            points={edge}
+            points={[
+              edge.renderedProps.position.origin.x,
+              edge.renderedProps.position.origin.y,
+              edge.renderedProps.position.target.x,
+              edge.renderedProps.position.target.y,
+            ]}
             stroke="black"
             strokeWidth={2}
           />
@@ -179,27 +179,7 @@ export function NetworkComponent<
   edges: TEdge[];
   NodeTemplate: NodesComponentProps["NodeTemplate"];
 }): JSX.Element {
-  const [edgePositions, setEdgePositions] = useState<ArrV4<KonvaSpace>[]>([]);
-  const nodePositions = [...nodes].map((node) => [
-    { ...node }.renderedProps.position.x,
-    { ...node }.renderedProps.position.y,
-  ]);
-  useEffect(() => {
-    console.log("TEST123-effect", nodePositions);
-    const newEdgePositions = edges.map((edge) => {
-      const originNode = nodes.find((node) => node.id === edge.origin);
-      const targetNode = nodes.find((node) => node.id === edge.target);
-      return [
-        originNode!.renderedProps.position.x,
-        originNode!.renderedProps.position.y,
-        targetNode!.renderedProps.position.x,
-        targetNode!.renderedProps.position.y,
-      ] as ArrV4<KonvaSpace>;
-    });
-    setEdgePositions(newEdgePositions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodePositions]);
-
+  console.log("TEST123-network", edges);
   return (
     <>
       {nodes && nodes.length > 0 && (
@@ -213,7 +193,7 @@ export function NetworkComponent<
               <NetworkNodes
                 NodeTemplate={NodeTemplate}
                 nodes={nodes}
-                edgePositions={edgePositions}
+                edges={edges}
               />
             )}
             {/* <TimelineTooltip tooltip={tooltip} /> */}

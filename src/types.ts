@@ -82,10 +82,11 @@ export type RenderableNetworkNode = NetworkNode & {
   renderedProps: { position: ObjV2<KonvaSpace>; color: HexStr };
 };
 
-export type NetworkEdge = {
-  origin: NodeID;
-  target: NodeID;
+export type GenericArrow<TOrigin, TTarget = TOrigin> = {
+  origin: TOrigin;
+  target: TTarget;
 };
+export type NetworkEdge = GenericArrow<NodeID>;
 export type RenderableNetworkEdge = NetworkEdge & {
   renderedProps: {
     originPosition: ObjV2<KonvaSpace>;
