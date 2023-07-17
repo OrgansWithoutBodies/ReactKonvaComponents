@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
-import { KonvaSpace, SpaceConvertingFunction, TimelineSpace } from "./types";
+import { KonvaSpace, TimelineSpace } from "./spaces";
+import { SpaceConvertingFunction } from "./types";
 
 type TimelineVars = {
   smallDivsPerBigDiv: number;

@@ -10,19 +10,15 @@ import {
   Stage,
   Text,
 } from "react-konva";
+import { ObjV2 } from "type-library/dist/vectors";
+import { TimeSpace, TimelineSpace } from "type-library/src";
 import {
   TimelineContext,
   TimelineVariables,
   useTimelineContext,
 } from "./TimelineContext";
 import { orderedNumbers } from "./orderedNumbers";
-import {
-  EventID,
-  ObjV2,
-  RenderableEvent,
-  TimeSpace,
-  TimelineSpace,
-} from "./types";
+import { EventID, RenderableEvent } from "./types";
 
 export function TimelineBackground({
   lastDate,
@@ -112,14 +108,14 @@ export function TimelineBackground({
 
 export function TimelineEvents({
   events,
-  selectedEventId,
+  selectedEventIds,
   onMouseOver,
   onMouseLeave,
   onSelectEvent,
 }: // onMouseMove,
 {
   events: RenderableEvent[];
-  selectedEventId: EventID | null;
+  selectedEventIds: EventID[];
   onMouseOver: (id: EventID, event: KonvaEventObject<MouseEvent>) => void;
   onMouseLeave: (id: EventID, event: KonvaEventObject<MouseEvent>) => void;
   onSelectEvent: (id: EventID, event: KonvaEventObject<MouseEvent>) => void;
@@ -139,7 +135,7 @@ export function TimelineEvents({
             y={divisionLen / 2}
             radius={10}
             fill={
-              selectedEventId === event.id
+              selectedEventIds.includes(event.id)
                 ? "yellow"
                 : event.renderedProps.color
             }
@@ -234,15 +230,15 @@ export function Timeline({
   earliestEventStart,
   onSelectEvent,
   onHoveredEvent,
-  selectedEventId,
+  selectedEventIds,
 }: {
   stageSize: ObjV2;
-  onHoveredEvent: (id: string) => void;
-  onSelectEvent: (id: string) => void;
-  events: any;
-  latestEventEnd: any;
-  earliestEventStart: any;
-  selectedEventId: any;
+  onHoveredEvent: (id: EventID) => void;
+  onSelectEvent: (id: EventID) => void;
+  events: RenderableEvent[];
+  latestEventEnd: TimeSpace;
+  earliestEventStart: TimeSpace;
+  selectedEventIds: EventID[];
 }): JSX.Element {
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
   // const [
@@ -277,7 +273,7 @@ export function Timeline({
           {events && (
             <TimelineEvents
               events={events}
-              selectedEventId={selectedEventId}
+              selectedEventIds={selectedEventIds}
               onMouseOver={function (
                 id: EventID,
                 event: KonvaEventObject<MouseEvent>

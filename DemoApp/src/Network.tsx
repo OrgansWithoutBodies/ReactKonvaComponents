@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { NodeID } from "type-library";
 import { ObjV2 } from "type-library/dist/vectors";
+import { KonvaSpace } from "type-library/src";
 import {
   NetworkComponent,
   NetworkNodeTemplate,
   NodesComponentProps,
 } from "../../src/Network";
-import { KonvaSpace } from "../../src/types";
 import { dataService } from "./data/data.service";
 import { useData } from "./useAkita";
 
@@ -27,7 +27,7 @@ export function Network({ stageSize }: { stageSize: ObjV2 }): JSX.Element {
   ]);
   const NodeTemplate: NodesComponentProps["NodeTemplate"] = ({ node }) => (
     <NetworkNodeTemplate
-      updateEdgePositions={(updatingNode, event) =>
+      onNodeMove={(updatingNode, event) =>
         dataService.moveNode(updatingNode, {
           x: event.target.x() as KonvaSpace,
           y: event.target.y() as KonvaSpace,

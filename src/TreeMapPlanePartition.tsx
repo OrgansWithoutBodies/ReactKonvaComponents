@@ -17,7 +17,7 @@ function TreeMapPlanePartitionNode({
 }: {
   partition: PartitionTree;
 }): JSX.Element {
-  return <>{partition.}</>;
+  return <>{partition}</>;
 }
 type ColorMapper<TNum extends number> = (value: TNum) => ColorNumberArraySolid;
 export function TreeMapPlanePartition(): JSX.Element {

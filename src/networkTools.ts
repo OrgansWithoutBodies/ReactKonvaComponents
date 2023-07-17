@@ -1,4 +1,4 @@
-import { AdjacencyMatrix } from "type-library";
+import { AdjacencyMatrix, Matrix } from "type-library";
 import { RawNetwork } from "./types";
 
 export const createLoL = (dim: number): Matrix<0> =>
@@ -12,10 +12,12 @@ export const createLoL = (dim: number): Matrix<0> =>
 //   return { nodes, edges };
 // };
 
-export const rawNetworkToAdjMat = (network: RawNetwork): AdjacencyMatrix => {
+export const rawNetworkToAdjMat = (
+  network: RawNetwork
+): AdjacencyMatrix<1 | 0> => {
   const numNodes = network.nodes.length;
 
-  const adjMat: AdjacencyMatrix = createLoL(numNodes);
+  const adjMat: AdjacencyMatrix<1 | 0> = createLoL(numNodes);
 
   network.nodes.forEach(({ id }, ii) => {
     const edgesStartingFromThisNode = network.edges

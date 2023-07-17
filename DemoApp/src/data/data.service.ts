@@ -1,17 +1,11 @@
 import { AdjacencyMatrix } from "type-library";
-import {
-  EventID,
-  HexStr,
-  KonvaSpace,
-  NodeID,
-  ObjV2,
-  TimeSpace,
-} from "../../../src/types";
-import { forceDirectedGraph } from "../layoutNetwork";
+import { ObjV2 } from "type-library/dist/vectors";
+import { forceDirectedGraph } from "../../../src/layoutNetwork";
+import { EventID, HexString, NodeID } from "../../../src/types";
 import { DataStore, NodePropsLookup, dataStore } from "./data.store";
 type CellID = [number, number];
 
-const getRandomColor = (): HexStr => {
+const getRandomColor = (): HexString => {
   // return "#FFFFFF";
 
   const channelSize = 16;
@@ -54,7 +48,7 @@ export class DataService {
     });
   }
 
-  public recolorNode(id: NodeID, newColor: HexStr) {
+  public recolorNode(id: NodeID, newColor: HexString) {
     this.dataStore.update((state) => {
       const mutableNodeLookup: NodePropsLookup = {
         ...state.networkNodeProps,

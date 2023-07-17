@@ -1,3 +1,4 @@
+import { type } from "rambdax";
 import { useState } from "react";
 import {
   GeoJSON,
@@ -7,21 +8,24 @@ import {
   TileLayer,
   useMapEvents,
 } from "react-leaflet";
+import { HexString } from "type-library";
+import { ArrV2, ObjV2 } from "type-library/dist/vectors";
 import {
-  CountryCode,
+  BilateralRelation,
   CountryHeartMap,
   CountryNameLookup,
   CountryRegionLookup,
   GeoJsonGeometryGeneric,
+  ICountryInfo,
   LonLat,
-  RegionColorMap,
 } from "./mapTypes";
-import { ArrV2, HexStr, ObjV2 } from "./types";
+type;
+
 // TODO filter by strength
-function positionLine(
-  partnerA: CountryCode,
-  partnerB: CountryCode,
-  countryHeartMap: CountryHeartMap
+function positionLine<TCountryLiterals extends number>(
+  partnerA: TCountryLiterals,
+  partnerB: TCountryLiterals,
+  countryHeartMap: CountryHeartMap<TCountryLiterals>
 ): LonLat[][] {
   const simpleLine = [
     capitalCityPositionByCode(partnerA, countryHeartMap),
@@ -43,11 +47,11 @@ function positionLine(
     const rightSideAntimeridianIntersection = [
       rightmostPoint[1 - xIndex] - deltaRise,
       180,
-    ];
+    ] as LonLat;
     const leftSideAntimeridianIntersection = [
       rightmostPoint[1 - xIndex] - deltaRise,
       -180,
-    ];
+    ] as LonLat;
     // console.log(rightmostPoint[1] + deltaRise, rightmostPoint, rise, run);
     return [
       [rightmostPoint, rightSideAntimeridianIntersection],
@@ -57,12 +61,12 @@ function positionLine(
   return [simpleLine];
 }
 
-function AntimeridianSafePolyLine({
+function AntimeridianSafePolyLine<TCountryLiterals extends number>({
   connection: [partnerA, partnerB, strength],
   countryHeartMap,
 }: {
-  connection: BilateralRelation;
-  countryHeartMap: CountryHeartMap;
+  connection: BilateralRelation<TCountryLiterals>;
+  countryHeartMap: CountryHeartMap<TCountryLiterals>;
 }): JSX.Element {
   const color = strength === 1 ? "green" : strength === 0 ? "black" : "red";
   return (
@@ -80,51 +84,61 @@ function AntimeridianSafePolyLine({
     </>
   );
 }
-const capitalCityPositionByCode = (
-  code: CountryCode,
-  countryHeartMap: CountryHeartMap
-) => {
+function capitalCityPositionByCode<TCountryLiterals extends number>(
+  code: TCountryLiterals,
+  countryHeartMap: CountryHeartMap<TCountryLiterals>
+): LonLat {
   const coords = [
     // spread to avoid mutation
     ...countryHeartMap[code]["geometry"]["coordinates"],
   ].reverse() as LonLat;
 
   return coords;
-};
-export type HighlightSpecification<TCountryLiterals extends string> = {
+}
+export type HighlightSpecification<TCountryLiterals extends number> = {
   highlightedCountries: TCountryLiterals[];
-  highlightColor: HexStr;
+  highlightColor: HexString;
 };
 
-export type HighlightPartition<TCountryLiterals extends string> =
+export type HighlightPartition<TCountryLiterals extends number> =
   HighlightSpecification<TCountryLiterals>[];
 
-type MapContentsType<TCountryLiterals extends string> = {
-  countries: { geometry: GeoJsonGeometryGeneric; key: TCountryLiterals }[];
-  countryToRegion: CountryRegionLookup<TCountryLiterals>;
-  countryToName: CountryNameLookup<TCountryLiterals>;
-  regionColorMap?: RegionColorMap;
-  bilateralRelations?: BilateralRelation[];
-  countryHeartMap?: CountryHeartMap;
+export type TWorldMapEntity<TCountryLiterals extends number> = {
+  geometry: GeoJsonGeometryGeneric;
+  key: TCountryLiterals;
+};
+
+type MapContentsType<
+  TCountryLiterals extends number,
+  TCountryInfo extends ICountryInfo
+> = {
+  countries: TWorldMapEntity<TCountryLiterals>[];
+  countryToRegion: CountryRegionLookup<TCountryLiterals, TCountryInfo>;
+  countryToName: CountryNameLookup<TCountryLiterals, TCountryInfo>;
+  countryLines?: BilateralRelation<TCountryLiterals>[];
+  countryHeartMap?: CountryHeartMap<TCountryLiterals>;
   highlights?: HighlightPartition<TCountryLiterals>;
 };
 
-export function MapContents<TCountryLiterals extends string>({
-  bilateralRelations,
+export function MapContents<
+  TCountryLiterals extends number,
+  TCountryInfo extends ICountryInfo
+>({
+  countryLines: bilateralRelations,
   countries,
-  // deprecated?
-  regionColorMap,
   countryHeartMap,
   countryToName,
-  countryToRegion,
   highlights,
-}: MapContentsType<TCountryLiterals>): JSX.Element {
+}: MapContentsType<TCountryLiterals, TCountryInfo>): JSX.Element {
   const [visibleRelations, setVisibleRelations] = useState<
-    BilateralRelation[] | undefined
+    BilateralRelation<TCountryLiterals>[] | undefined
   >(bilateralRelations);
   useMapEvents({
     popupopen: ({ popup }) => {
-      const visibleId = popup.options.children.props.id;
+      // TODO no any
+      const visibleId = (
+        popup.options as { children: { props: { id: number } } }
+      ).children.props.id;
       if (!bilateralRelations) {
         return;
       }
@@ -140,9 +154,7 @@ export function MapContents<TCountryLiterals extends string>({
   });
 
   function getHighlightColor(key: TCountryLiterals): `#${string}` | "white" {
-    // regionColorMap
-    //           ? regionColorMap[countryToRegion[key]]
-    //           :
+    // TODO reimplement defacto regionColorMap
     return (
       highlights?.find((highlightedSpec) =>
         highlightedSpec.highlightedCountries.includes(key)
@@ -170,13 +182,10 @@ export function MapContents<TCountryLiterals extends string>({
           data={geometry}
         >
           <Popup>
-            <div id={key}>{countryToName[key]}</div>
+            <div id={`${key}`}>{countryToName[key]}</div>
           </Popup>
         </GeoJSON>
       ))}
-      {/* <LayerGroup> */}
-      {/* TODO hide irrelevant connections when a country is selected */}
-      {/* TODO dont have lines stretch over half the map? */}
       {visibleRelations &&
         countryHeartMap &&
         visibleRelations.map((connection) => {
@@ -187,20 +196,30 @@ export function MapContents<TCountryLiterals extends string>({
             ></AntimeridianSafePolyLine>
           );
         })}
-      {/* </LayerGroup> */}
     </>
   );
 }
-export function WorldMap<TCountryLiterals extends string>({
+export type WorldMapType<
+  TCountryLiterals extends number,
+  TCountryInfo extends ICountryInfo
+> = {
+  container: {
+    sizePx: ObjV2;
+    center: ArrV2;
+  };
+  contents: MapContentsType<TCountryLiterals, TCountryInfo>;
+};
+
+export function WorldMap<
+  TCountryLiterals extends number,
+  TCountryInfo extends ICountryInfo
+>({
   contents,
   container: {
     center,
     sizePx: { x: width, y: height },
   },
-}: {
-  container: { sizePx: ObjV2; center: ArrV2 };
-  contents: MapContentsType<TCountryLiterals>;
-}): JSX.Element {
+}: WorldMapType<TCountryLiterals, TCountryInfo>): JSX.Element {
   return (
     <>
       <MapContainer
@@ -217,5 +236,5 @@ export function WorldMap<TCountryLiterals extends string>({
     </>
   );
 }
-const makeGoogleNewsFeedUrl = (countryNameUrlSafe: string) =>
+export const makeGoogleNewsFeedUrl = (countryNameUrlSafe: string) =>
   `https://news.google.com/search?q=${countryNameUrlSafe}`;

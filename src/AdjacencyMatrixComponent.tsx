@@ -7,13 +7,10 @@ import type {
   ColumnID,
   NodeID,
 } from "type-library";
+import { ArrV2, ObjV2 } from "type-library/dist/vectors";
+import { ScreenSpace } from "type-library/src";
 import { NetworkComponent } from "./Network";
-import {
-  ArrV2,
-  RawNetwork as GenericRawNetwork,
-  ObjV2,
-  RenderableNetworkNode,
-} from "./types";
+// RawNetwork as GenericRawNetwork,
 // yellow x<-1
 // blue -1>x>0
 // red - 0>x>1
@@ -359,7 +356,8 @@ type GenericRawNetwork<TNode extends NetworkNode, TEdge extends NetworkEdge> = {
 export function AdjacencyMatrixNetworkComponent({
   nodes,
   edges,
-}: GenericRawNetwork<
+  stageSize,
+}: { stageSize: ObjV2<ScreenSpace> } & GenericRawNetwork<
   NetworkNode & {
     adjMat: AdjacencyMatrix<number>;
     colorMapper: ColorMapper<number>;
@@ -372,12 +370,13 @@ export function AdjacencyMatrixNetworkComponent({
         stageSize={stageSize}
         nodes={nodes}
         edges={edges}
-        NodeTemplate={({node})=>
+        NodeTemplate={({ node }) => (
           <EncapsulatedAdjacencyMatrixComponent
             adjMatData={node.adjMat}
             colorMapper={node.colorMapper}
-             
-          /> }
+            layerPosition={undefined}
+          />
+        )}
       />
     </>
   );

@@ -1,17 +1,9 @@
 import { Store } from "@datorama/akita";
-import type {
-  Agent,
-  ArrV2,
-  EventID,
-  HexStr,
-  HistoricalEvent,
-  KonvaSpace,
-  NodeID,
-  ObjV2,
-  TimeSpace,
-} from "../../src/types";
+import { HexString, NodeID } from "type-library";
+import { ArrV2, KonvaSpace, ObjV2, TimeSpace } from "type-library/src";
+import { Agent, EventID, HistoricalEvent } from "../../../src/types";
 
-type NodeRenderProps = { position: ObjV2<KonvaSpace>; color: HexStr };
+type NodeRenderProps = { position: ObjV2<KonvaSpace>; color: HexString };
 export type NodePropsLookup = Record<NodeID, NodeRenderProps>;
 
 export interface DataState {

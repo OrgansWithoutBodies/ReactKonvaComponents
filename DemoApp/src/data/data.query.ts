@@ -1,24 +1,25 @@
 import { Query } from "@datorama/akita";
 
 import { Observable, combineLatest, map, startWith } from "rxjs";
+import { AdjacencyMatrix, HexString } from "type-library";
+import {
+  RawNetwork,
+  RenderableNetworkEdge,
+  TestNetworkNode,
+  TimeSpace,
+  TimelineSpace,
+} from "type-library/src";
 import { rawNetworkToAdjMat } from "../../../src/networkTools";
 import {
-  AdjacencyMatrix,
   Agent,
   AgentID,
-  HexStr,
   HistoricalEvent,
   InfoPanelDateElement,
   LineSegment,
   NodeID,
   PeriodOrSingleton,
-  RawNetwork,
   RenderableEvent,
-  RenderableNetworkEdge,
-  RenderableNetworkNode,
   SpaceConvertingFunction,
-  TimeSpace,
-  TimelineSpace,
   periodIsSegmentGuard,
 } from "../../../src/types";
 import { DataState, DataStore, dataStore } from "./data.store";
@@ -31,7 +32,7 @@ const formatDates = ({ eventTime }: HistoricalEvent): string => {
   return `${eventTime}`;
 };
 
-const getRandomColor = (): HexStr => {
+const getRandomColor = (): HexString => {
   // return "#FFFFFF";
 
   const channelSize = 16;
@@ -211,7 +212,7 @@ export class DataQuery extends Query<DataState> {
       startWith([])
     );
 
-  public renderableEventNetworkNodes: Observable<RenderableNetworkNode[]> =
+  public renderableEventNetworkNodes: Observable<TestNetworkNode[]> =
     this.eventParticipantsAsNetwork.pipe(
       map(({ nodes }) => {
         //z
@@ -219,7 +220,7 @@ export class DataQuery extends Query<DataState> {
         const filtered = nodes.filter(
           ({ renderedProps }) => renderedProps !== undefined
         );
-        return filtered as RenderableNetworkNode[];
+        return filtered as TestNetworkNode[];
       })
     );
 

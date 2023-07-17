@@ -19,6 +19,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "../src/networkTools.ts"],
+  "include": ["src", "../src/networkTools.ts", "../src/layoutNetwork.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
