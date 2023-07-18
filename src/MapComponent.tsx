@@ -236,5 +236,5 @@ export function WorldMap<
     </>
   );
 }
-export const makeGoogleNewsFeedUrl = (countryNameUrlSafe: string) =>
-  `https://news.google.com/search?q=${countryNameUrlSafe}`;
+// export const makeGoogleNewsFeedUrl = (countryNameUrlSafe: string) =>
+//   `https://news.google.com/search?q=${countryNameUrlSafe}`;

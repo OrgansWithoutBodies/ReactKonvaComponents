@@ -84,7 +84,7 @@ Pick<NodesComponentProps, "nodes" | "edges" | "NodeTemplate">): JSX.Element {
 }
 
 // TODO
-type Tooltip = {
+export type Tooltip = {
   title: string;
   desc: string;
   pos: TimelineSpace;

@@ -1,4 +1,4 @@
-function App() {
+function App(): JSX.Element {
   // const ref = useRef<ImperativePanelGroupHandle>(null);
   // const resetLayout = () => {
   //   const panelGroup = ref.current;
@@ -92,18 +92,19 @@ function App() {
   //     {/* </div> */}
   //   </div>
   // );
+  return <></>;
 }
 
 export default App;
-const PanelStyles: Record<string, React.CSSProperties> = {
-  container: {
-    height: "100%",
-    width: "100%",
-    display: "flex",
-    flexDirection: "row",
-    alignItems: " center",
-    justifyContent: " center",
-    overflow: "hidden",
-    borderRadius: " 0.5rem",
-  },
-};
+// const PanelStyles: Record<string, React.CSSProperties> = {
+//   container: {
+//     height: "100%",
+//     width: "100%",
+//     display: "flex",
+//     flexDirection: "row",
+//     alignItems: " center",
+//     justifyContent: " center",
+//     overflow: "hidden",
+//     borderRadius: " 0.5rem",
+//   },
+// };

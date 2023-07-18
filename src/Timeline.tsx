@@ -275,8 +275,8 @@ export function Timeline({
               events={events}
               selectedEventIds={selectedEventIds}
               onMouseOver={function (
-                id: EventID,
-                event: KonvaEventObject<MouseEvent>
+                id: EventID
+                // event: KonvaEventObject<MouseEvent>
               ): void {
                 const hitEvent = events.find(
                   ({ id: sourceId }) => sourceId === id
@@ -286,8 +286,8 @@ export function Timeline({
                 }
               }}
               onSelectEvent={function (
-                id: EventID,
-                event: KonvaEventObject<MouseEvent>
+                id: EventID
+                // event: KonvaEventObject<MouseEvent>
               ): void {
                 const hitEvent = events.find(
                   ({ id: sourceId }) => sourceId === id

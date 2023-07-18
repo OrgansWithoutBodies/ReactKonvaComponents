@@ -1,11 +1,16 @@
-import { AdjacencyMatrix } from "type-library";
+import {
+  AdjacencyMatrix,
+  HexString,
+  KonvaSpace,
+  TimeSpace,
+} from "type-library";
 import { ObjV2 } from "type-library/dist/vectors";
 import { forceDirectedGraph } from "../../../src/layoutNetwork";
-import { EventID, HexString, NodeID } from "../../../src/types";
+import { EventID, NodeID } from "../../../src/types";
 import { DataStore, NodePropsLookup, dataStore } from "./data.store";
 type CellID = [number, number];
 
-const getRandomColor = (): HexString => {
+export const getRandomColor = (): HexString => {
   // return "#FFFFFF";
 
   const channelSize = 16;

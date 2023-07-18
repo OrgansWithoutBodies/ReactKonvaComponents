@@ -15,14 +15,15 @@ type LiteralQueryState<
 > = { readonly [key in Keys[number]]: ObservedValueOf<TQuery[key]> };
 
 export function useAkita<
-  TState extends {},
+  TState extends object,
   TQuery extends Query<TState>,
-  TService extends any
+  TService
 >(
   query: TQuery,
   service: TService,
   queryTerms: SubscribedQueryKeys<TQuery>
 ): [LiteralQueryState<TQuery, typeof queryTerms>, TService[keyof TService][]] {
+  console.log(service);
   const [retrievedQueryTerms, setRetrievedQueryTerms] = useState<
     LiteralQueryState<TQuery, typeof queryTerms>
   >(

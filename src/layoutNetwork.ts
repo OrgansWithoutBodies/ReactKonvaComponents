@@ -95,10 +95,10 @@ export const forceDirectedGraph: DirectedGraphGenerator = ({
   const fr = (x: number): number => k ** 2 / x; // Formula to calculate repulsive forces
 
   // give all nodes an initial position
-  const positions = G.map((_) =>
+  const positions = G.map(() =>
     Vector2D(Math.ceil(Math.random() * W), Math.ceil(Math.random() * H))
   );
-  const displacements = G.map((_) => Vector2D(0, 0));
+  const displacements = G.map(() => Vector2D(0, 0));
 
   let t = W / 10;
   const dt = t / (iterations + 1);
@@ -111,9 +111,9 @@ export const forceDirectedGraph: DirectedGraphGenerator = ({
     // console.log(`Iteration: ${i}`);
 
     // Calculate repulsive forces
-    G.forEach((v, indexV) => {
+    G.forEach((_, indexV) => {
       displacements[indexV] = Vector2D(0, 0);
-      G.forEach((u, indexU) => {
+      G.forEach((_, indexU) => {
         if (indexU != indexV) {
           const delta = positions[indexV].Min(positions[indexU]);
           if (delta.length != 0) {
@@ -139,7 +139,7 @@ export const forceDirectedGraph: DirectedGraphGenerator = ({
     });
 
     // limit max displacement
-    G.forEach((node, index) => {
+    G.forEach((_, index) => {
       positions[index] = positions[index].Plus(
         displacements[index]
           .divide(displacements[index].length)

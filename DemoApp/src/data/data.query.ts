@@ -1,11 +1,11 @@
 import { Query } from "@datorama/akita";
 
 import { Observable, combineLatest, map, startWith } from "rxjs";
-import { AdjacencyMatrix, HexString } from "type-library";
 import {
+  AdjacencyMatrix,
   RawNetwork,
   RenderableNetworkEdge,
-  TestNetworkNode,
+  RenderableNetworkNode,
   TimeSpace,
   TimelineSpace,
 } from "type-library/src";
@@ -30,18 +30,6 @@ const formatDates = ({ eventTime }: HistoricalEvent): string => {
     return `${eventTime.start} - ${eventTime.end}`;
   }
   return `${eventTime}`;
-};
-
-const getRandomColor = (): HexString => {
-  // return "#FFFFFF";
-
-  const channelSize = 16;
-  const charCode = new Array(6)
-    .fill(0)
-    .map(() => Math.round(Math.random() * channelSize).toString(16))
-    .reduce((prev, curr) => prev + curr);
-
-  return `#${charCode}`;
 };
 
 const timeObjAAfterTimeObjB = (
@@ -73,7 +61,7 @@ export class DataQuery extends Query<DataState> {
     sortKey: keyof LineSegment
   ) => {
     return [...events].sort((eventA, eventB) => {
-      return timeObjAAfterTimeObjB(eventA.eventTime, eventB.eventTime, "start")
+      return timeObjAAfterTimeObjB(eventA.eventTime, eventB.eventTime, sortKey)
         ? 1
         : -1;
     });
@@ -109,6 +97,7 @@ export class DataQuery extends Query<DataState> {
     events: HistoricalEvent[],
     agents: Agent[]
   ) {
+    console.log(agents);
     return new Set(
       events
         .map((event) =>
@@ -173,15 +162,23 @@ export class DataQuery extends Query<DataState> {
       const eventParticipants = unfilteredEvents
         .filter((event) => event.participants !== undefined)
         .map((event) => event.participants) as AgentID[][];
-      const edges = new Set<[AgentID, AgentID]>();
+      const edges = new Set<[NodeID, NodeID]>();
       // TODO terrible performance, add tests & improve thru tdd
       const addEdgesBetweenAll = (edgeList: AgentID[]) => {
         edgeList.forEach((agent) => {
           edgeList
             .filter((val) => val !== agent)
             .forEach((otherAgent) => {
-              if (!edges.has([otherAgent as number, agent as number])) {
-                edges.add([agent as number, otherAgent as number]);
+              if (
+                !edges.has([
+                  otherAgent as number as NodeID,
+                  agent as number as NodeID,
+                ])
+              ) {
+                edges.add([
+                  agent as number as NodeID,
+                  otherAgent as number as NodeID,
+                ]);
                 // console.log("TEST123", edges);
               }
             });
@@ -192,7 +189,7 @@ export class DataQuery extends Query<DataState> {
       });
 
       return {
-        edges: [...edges].distinct().map(([origin, target]) => {
+        edges: [...edges].map(([origin, target]) => {
           return { origin, target };
         }),
         nodes: [...participantsAllEvents].map((participant) => {
@@ -212,15 +209,15 @@ export class DataQuery extends Query<DataState> {
       startWith([])
     );
 
-  public renderableEventNetworkNodes: Observable<TestNetworkNode[]> =
+  public renderableEventNetworkNodes: Observable<RenderableNetworkNode[]> =
     this.eventParticipantsAsNetwork.pipe(
       map(({ nodes }) => {
         //z
         // const placements = forceDirectedGraph({ G: adjMat, H: 100 });
-        const filtered = nodes.filter(
-          ({ renderedProps }) => renderedProps !== undefined
-        );
-        return filtered as TestNetworkNode[];
+        // const filtered = nodes.filter(
+        //   ({ renderedProps }) => renderedProps !== undefined
+        // );
+        return nodes as RenderableNetworkNode[];
       })
     );
 
@@ -234,8 +231,10 @@ export class DataQuery extends Query<DataState> {
           return {
             ...edge,
             renderedProps: {
-              originPosition: nodes[edge.origin].renderedProps.position,
-              targetPosition: nodes[edge.target].renderedProps.position,
+              position: {
+                origin: nodes[edge.origin].renderedProps.position,
+                target: nodes[edge.target].renderedProps.position,
+              },
             },
           };
         });
@@ -373,7 +372,7 @@ export class DataQuery extends Query<DataState> {
         return {
           ...event,
           renderedProps: {
-            color: "red",
+            color: "#FF0000",
             position: positioner(event),
           },
         };
@@ -442,7 +441,7 @@ export class DataQuery extends Query<DataState> {
           ? [hoveredNetworkNodeEventInfo]
           : [];
         const adjMatElements = adjMatCellEventInfo ? [adjMatCellEventInfo] : [];
-        const networkElements = [];
+        // const networkElements = [];
 
         return [
           ...eventElements,

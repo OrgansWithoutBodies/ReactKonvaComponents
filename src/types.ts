@@ -13,7 +13,7 @@ export type HexChannelNumber<TChannel extends Channel = Channel> =
 
 export type HexTripleNumber = ArrV3<HexChannelNumber>;
 // TODO types from openapi
-type BrandedType<T = any, Brand extends string = string> = T & {
+type BrandedType<T, Brand extends string = string> = T & {
   __brand: Brand;
 };
 
@@ -46,7 +46,7 @@ export type Agent = {
   id: AgentID;
   name: string;
 };
-type ConversionTag<TFrom extends number, TTo extends number> = {
+export type ConversionTag<TFrom extends number, TTo extends number> = {
   __from: TFrom;
   __to: TTo;
 };
@@ -64,7 +64,7 @@ export type RenderableEvent = HistoricalEvent & {
 export const periodIsSegmentGuard = (
   event: PeriodOrSingleton<TimeSpace>
 ): event is TimePeriod => {
-  return isNaN(event as any);
+  return isNaN(event as number);
 };
 
 export type NetworkNode = {

@@ -1,5 +1,4 @@
-import { AdjacencyMatrix, Matrix } from "type-library";
-import { RawNetwork } from "./types";
+import { AdjacencyMatrix, Matrix, RawNetwork } from "type-library/src";
 
 export const createLoL = (dim: number): Matrix<0> =>
   [...Array.from({ length: dim }).keys()].map(
