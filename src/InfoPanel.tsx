@@ -1,4 +1,3 @@
-import { useData } from "../DemoApp/src/useAkita";
 import { InfoPanelDateElement } from "./types";
 
 // TODO abstract this a bit - maybe drive from query?
@@ -16,7 +15,8 @@ export function InfoElement({
   );
 }
 export function InfoPanel(): JSX.Element {
-  const [{ infoPanelElements }] = useData(["infoPanelElements"]);
+  // const [{ infoPanelElements }] = useData(["infoPanelElements"]);
+  const infoPanelElements: any[] = [];
   return (
     <div style={{ backgroundColor: "green" }}>
       {infoPanelElements &&
